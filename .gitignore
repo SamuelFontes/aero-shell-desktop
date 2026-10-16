@@ -1,0 +1,8 @@
+/build/
+/stage/
+/upstream/*
+!/upstream/sources.lock.json
+*.pkg.tar.*
+*.src.tar.*
+*.log
+__pycache__/

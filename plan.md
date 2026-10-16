@@ -3,7 +3,7 @@
 **Status:** Planning  
 **Project repository:** [SamuelFontes/aero-shell-desktop](https://github.com/SamuelFontes/aero-shell-desktop)  
 **Target:** Arch Linux / Manjaro first; other Linux distributions later  
-**Upstream base:** [AeroThemePlasma](https://github.com/aeroshell-desktop/aerothemeplasma), `Plasma/6.7` branch (verify version compatibility before builds)  
+**Upstream candidate:** [AeroThemePlasma](https://github.com/aeroshell-desktop/aerothemeplasma), `Plasma/6.7` mirror inspected; select a pinned branch and full commit only after verifying the Wayland feature set and Plasma/KWin compatibility.
 **Proposed package:** `aeroshell-desktop-git`  
 **Proposed install prefix:** `/opt/aeroshell`  
 **Primary session:** Wayland; X11 is optional future work and is not a release prerequisite.  
@@ -39,9 +39,9 @@ Build an independently selectable **AeroShell** desktop session based on AeroThe
 
 ## 2. Upstream starting point to verify during inventory
 
-The existing plan identifies the `Plasma/6.7` branch as providing AeroThemePlasma-specific SDDM sessions. Its X11 launcher (`plasma/sddm/login-sessions/startatp.cmake`) sets `XDG_CONFIG_DIRS`, `USE_UAC_AGENT`, and `PLASMA_DEFAULT_SHELL=io.gitgud.wackyideas.desktop`, then starts `startplasma-x11`. **This is a separate session entry, not complete isolation**: `XDG_CONFIG_DIRS` supplies system defaults but does not isolate writable per-user settings.
+The `Plasma/6.7` README describes AeroThemePlasma as a KDE Plasma shell, says its Wayland support is incomplete, and points to Plasma 6.8 for planned support. Treat that branch as a candidate for audit, not proof of Wayland readiness. The public GitHub repositories are read-only mirrors; record exact full source commits and canonical source URLs before builds. See `docs/upstream-audit.md` for the partial web audit. The `Plasma/6.7` branch also contains AeroThemePlasma-specific SDDM sessions. Its X11 launcher (`plasma/sddm/login-sessions/startatp.cmake`) sets `XDG_CONFIG_DIRS`, `USE_UAC_AGENT`, and `PLASMA_DEFAULT_SHELL=io.gitgud.wackyideas.desktop`, then starts `startplasma-x11`. **This is a separate session entry, not complete isolation**: `XDG_CONFIG_DIRS` supplies system defaults but does not isolate writable per-user settings.
 
-The upstream `install.sh` builds and installs multiple projects using `-DCMAKE_INSTALL_PREFIX=/usr`, including a fork of `libplasma`. Its installation documentation warns that KDE updates can break the modifications and that uninstalling requires reinstalling the distro's `libplasma`. Do **not** execute the upstream installer on the development host until the installation has been made non-destructive.
+The upstream `install.sh` builds and installs multiple projects using `-DCMAKE_INSTALL_PREFIX=/usr`, runs `update-mime-database` on a global path, and builds an SDDM configuration module alongside a fork of `libplasma`. Its installation documentation warns that KDE updates can break the modifications and that uninstalling requires reinstalling the distro's `libplasma`. Do **not** execute the upstream installer on the development host until the installation has been made non-destructive.
 
 ### Upstream components to inventory
 
