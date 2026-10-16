@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=AeroShellAero
+Comment=Original light Aero-style GTK appearance for AeroShell sessions
+Encoding=UTF-8
+GtkTheme=AeroShellAero
+IconTheme=Windows 7 Aero

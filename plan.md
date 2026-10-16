@@ -1,17 +1,17 @@
 # AeroShell Desktop — Independent Desktop Environment
 
-**Status:** Planning  
+**Status:** Implementation in progress
 **Project repository:** [SamuelFontes/aero-shell-desktop](https://github.com/SamuelFontes/aero-shell-desktop)  
 **Target:** Arch Linux / Manjaro first; other Linux distributions later  
-**Upstream candidate:** [AeroThemePlasma](https://github.com/aeroshell-desktop/aerothemeplasma), `Plasma/6.7` mirror inspected; select a pinned branch and full commit only after verifying the Wayland feature set and Plasma/KWin compatibility.
+**Required appearance source:** [AeroThemePlasma](https://github.com/aeroshell-desktop/aerothemeplasma), `Plasma/6.7` mirror inspected; its appearance, widgets, and assets are AeroShell's required default. Its Plasma session and machine-wide installer are not the AeroShell desktop/session implementation.
 **Proposed package:** `aeroshell-desktop-git`  
 **Proposed install prefix:** `/opt/aeroshell`  
 **Primary session:** Wayland; X11 is optional future work and is not a release prerequisite.  
-**Primary objective:** Install AeroShell alongside an existing KDE Plasma installation, and choose either session from the existing login screen without AeroShell installation, use, updates, or removal changing the existing KDE setup.
+**Primary objective:** Install AeroShell alongside an existing KDE Plasma installation, and choose either session from the existing login screen without AeroShell installation, use, updates, or removal changing the existing KDE setup. AeroThemePlasma is the required, complete default appearance of AeroShell, adapted to AeroShell's own shell and session.
 
 ## 1. Goal and non-negotiable requirements
 
-Build an independently selectable **AeroShell** desktop session based on AeroThemePlasma's Windows 7-style shell. It may use the distro's KDE Plasma, Qt, KDE Frameworks, drivers, and applications as dependencies, but it **must not replace or modify** the distro's KDE packages or the user's KDE desktop configuration.
+Build an independently selectable **AeroShell** Wayland desktop environment with its own Qt Quick shell, session lifecycle, settings, and services. KWin and KDE libraries may be used as compositor/runtime dependencies, but AeroShell must not start Plasma's shell session or replace or modify the distro's KDE packages or the user's KDE desktop configuration. AeroThemePlasma is the required complete default visual design and widget source; its theme session is not the independent desktop implementation.
 
 ### Required behavior
 
@@ -19,8 +19,12 @@ Build an independently selectable **AeroShell** desktop session based on AeroThe
 - [ ] Never install, configure, restart, enable, disable, theme, or replace SDDM or another display manager. Never programmatically change its default session or remembered selection; the display manager may remember a session the user selects through its normal UI.
 - [ ] Login-screen theme selection belongs entirely to the user through their chosen tools; AeroShell supplies no SDDM theme installer, configuration module, or theme-switching hook.
 - [ ] AeroShell has its own desktop identity, startup lifecycle, settings profile, and session services. KDE technology may be reused as dependencies without making AeroShell a theme applied to the Plasma session.
+- [ ] AeroThemePlasma's full desktop appearance is set up on first login: wallpaper, icons, fonts, cursor, colors, shell style, taskbar, Start menu, widgets/gadgets, window decoration/effects where Wayland-safe, sounds, notifications, and lock-screen appearance. The user does not need to install or activate a theme after login.
+- [ ] AeroThemePlasma's selected appearance assets and shell components are packaged as AeroShell-owned resources. Plasma-only pieces are ported to AeroShell's native shell or hosted in a private AeroShell process; installing a plasmoid alone does not count as working widget support.
+- [ ] Every required first-login resource is bundled and selected automatically; the user has explicitly directed that asset-rights verification is not a completion gate. Do not make fonts, wallpaper, icons, or any other required appearance item depend on user import or setup.
 - [ ] Existing Plasma packages remain package-manager-owned, unmodified, and usable.
 - [ ] AeroShell panels, plasmoids, wallpaper, window decorations, KWin effects, shortcuts, fonts, icons, and shell settings do not overwrite KDE Plasma's settings.
+- [ ] AeroShell presents its default AeroThemePlasma desktop composition and widgets without first-run manual theming. All appearance and widget customization stays in AeroShell's profile.
 - [ ] Switching between AeroShell and Plasma takes only a logout and login; no theme/application/uninstall scripts are needed.
 - [ ] AeroShell runs under the **same Linux user account** and can access the user's files and installed applications.
 - [ ] Installing or uninstalling AeroShell never requires reinstalling `libplasma`, `plasma-desktop`, `plasma-workspace`, or `kwin`.
@@ -39,22 +43,24 @@ Build an independently selectable **AeroShell** desktop session based on AeroThe
 
 ## 2. Upstream starting point to verify during inventory
 
-The `Plasma/6.7` README describes AeroThemePlasma as a KDE Plasma shell, says its Wayland support is incomplete, and points to Plasma 6.8 for planned support. Treat that branch as a candidate for audit, not proof of Wayland readiness. The public GitHub repositories are read-only mirrors; record exact full source commits and canonical source URLs before builds. See `docs/upstream-audit.md` for the partial web audit. The `Plasma/6.7` branch also contains AeroThemePlasma-specific SDDM sessions. Its X11 launcher (`plasma/sddm/login-sessions/startatp.cmake`) sets `XDG_CONFIG_DIRS`, `USE_UAC_AGENT`, and `PLASMA_DEFAULT_SHELL=io.gitgud.wackyideas.desktop`, then starts `startplasma-x11`. **This is a separate session entry, not complete isolation**: `XDG_CONFIG_DIRS` supplies system defaults but does not isolate writable per-user settings.
+The `Plasma/6.7` README describes AeroThemePlasma as a Windows 7 appearance for KDE Plasma, says its Wayland support is incomplete, and points to Plasma 6.8 for planned support. It also carries a hiatus notice with an unknown resumption date. The KWin Components project defaults its Wayland build option off, and an open upstream issue reports a deprecated Wayland startup helper. AeroThemePlasma is nevertheless the required design and component source for AeroShell's default appearance; it is not the independent DE implementation or an accepted Wayland session baseline. Port or isolate its needed shell components and widgets. The public GitHub repositories are read-only mirrors; record exact full source commits and canonical source URLs before incorporating upstream assets or components. See `docs/upstream-audit.md` for the partial web audit. The `Plasma/6.7` branch's Wayland launcher sets KDE shell/config variables and starts the distro `startplasma-wayland`; its entry identifies itself as `KDE`. AeroShell's own launcher and shell must not use that session chain.
 
-The upstream `install.sh` builds and installs multiple projects using `-DCMAKE_INSTALL_PREFIX=/usr`, runs `update-mime-database` on a global path, and builds an SDDM configuration module alongside a fork of `libplasma`. Its installation documentation warns that KDE updates can break the modifications and that uninstalling requires reinstalling the distro's `libplasma`. Do **not** execute the upstream installer on the development host until the installation has been made non-destructive.
+The upstream Wayland CMake rules install a launcher into the bindir and a desktop entry into `wayland-sessions`. The upstream `install.sh` builds and installs multiple projects using `-DCMAKE_INSTALL_PREFIX=/usr`, runs `update-mime-database` on a global path, and builds an SDDM configuration module alongside a fork of `libplasma`. Its installation documentation warns that KDE updates can break the modifications and that uninstalling requires reinstalling the distro's `libplasma`. Do **not** execute the upstream installer on the development host until the installation has been made non-destructive.
 
 ### Upstream components to inventory
 
 | Component | Expected role | Initial treatment |
 |---|---|---|
-| `aerothemeplasma` | Plasma shell themes, plasmoids, default settings, session entries | Relocate into private prefix; replace session launchers |
-| `aeroshell-workspace` | Workspace integration and shell components | Audit for hardcoded paths, settings writes, global services |
-| `libplasma` fork | Aero-specific Plasma library changes | **Highest risk:** privately load only in AeroShell processes |
-| `aeroshell-kwin-components` | Custom KWin effects and integrations | Isolate plugin discovery and compositor configuration |
-| `smod` / glow components | Window decoration and effects | Audit Wayland support; port needed effects into supported compositor/decoration interfaces, or defer them |
-| `uac-polkit-agent` | Aero-styled authentication agent | Activate only for AeroShell; avoid duplicate agents |
+| In-repository Qt Quick shell | AeroShell desktop surface, panel, launcher, task list, widgets, and app launch | Required core; use KWin Wayland and KWayland's Plasma shell/window-management protocols without starting `startplasma-wayland`; port default AeroThemePlasma widgets here |
+| `aerothemeplasma` | Theme design, shell visuals, widgets, and appearance assets | Required default design/source; audit and adapt component-by-component; never import its Plasma session launcher or shared Plasma defaults |
+| `aeroshell-workspace` | Shared AeroShell widgets, artwork, configuration, and workspace integration | Required source candidate for default appearance/widgets; privately install and audit each install action and config write |
+| `libplasma` fork | Aero-specific Plasma APIs used by upstream applets/components | Required only for selected widgets that cannot yet be ported; isolate in a private widget host loaded only by AeroShell processes |
+| `aeroshell-kwin-components` | Custom KWin effects and integrations | Required for each effect that forms part of the default appearance and passes Wayland/ABI/isolation audits; replace unsafe effects with an AeroShell-native equivalent |
+| `smod` / glow components | Window decoration and effects | Required default appearance component where it passes Wayland and private KWin plugin-loading checks; otherwise implement an equivalent Aero decoration/effect |
+| `uac-polkit-agent` | Aero-styled authentication UI | Required if authentication and single-agent ownership pass; otherwise adapt a safe session-owned agent to the Aero appearance |
 | `aeroshell-sddm-kcm` | SDDM configuration UI | Exclude entirely from builds, packages, dependencies, and setup flows |
-| `aerothemeplasma-icons` / `-sounds` | Visual and audio assets | Install privately without changing desktop-wide defaults |
+| `aerothemeplasma-icons` / `-sounds` | Default icon and audio assets | Required defaults; selection stays inside AeroShell |
+| AeroShell GTK style | GTK application styling that matches AeroThemePlasma | Required appearance component; selected only for apps launched from AeroShell |
 
 **Source of truth:** Pin commits for all repositories and inspect their real install manifests; the table above is an audit checklist, not evidence that each component already supports a private prefix.
 
@@ -69,34 +75,30 @@ Existing display manager (user-managed, untouched)
 └── AeroShell (new)
     ├── /usr/bin/aeroshell-session-wayland
     ├── /opt/aeroshell/{bin,lib,lib64,share,etc,libexec}/...
-    ├── private AeroShell libplasma and custom plugins (as needed)
-    ├── AeroThemePlasma shell + KWin effects + resources
-    └── isolated AeroShell configuration, data, cache, state
+    ├── distro kwin_wayland compositor and xwayland
+    ├── independent Qt Quick AeroShell shell; KWin receives desktop/panel roles
+    ├── distro Qt/KDE/KWayland dependencies; no private libplasma in the core
+    ├── preconfigured AeroThemePlasma appearance, icons, fonts, wallpaper, widgets, and session-only services
+    └── isolated KWin and AeroShell profile; user apps keep original XDG roots
 ```
 
 ### Installation layout
 
 ```text
 /opt/aeroshell/
-├── bin/
-├── lib/                      # actual library path depends on distro
-├── libexec/
-├── share/
-│   ├── plasma/               # verify KDE-specific subdirectory layout
-│   ├── icons/
-│   ├── sounds/
-│   └── ...
-└── etc/xdg/
-    └── aerothemeplasma/
+├── bin/aeroshell-shell
+├── libexec/aeroshell-shell-session
+└── share/aeroshell/          # required, audited AeroThemePlasma visuals and widget resources
 
 /usr/bin/aeroshell-session-wayland
 /usr/share/wayland-sessions/aeroshell.desktop
 # Optional later: /usr/share/xsessions/aeroshell.desktop
 
-~/.config/aeroshell/         # isolated config home or targeted KDE files
-~/.local/share/aeroshell/    # isolated user data, where needed
-~/.cache/aeroshell/
-~/.local/state/aeroshell/
+~/.config/aeroshell/kwin/config/
+~/.local/share/aeroshell/kwin/data/
+~/.cache/aeroshell/kwin/cache/
+~/.local/state/aeroshell/kwin/state/
+# AeroShell appearance and widget layout live below ~/.config/aeroshell/.
 ```
 
 **Ownership rule:** Only uniquely named package integration files may go under `/usr` (for example `/usr/bin/aeroshell-session-wayland` and a standard desktop-session `.desktop` file). No existing system paths may be overwritten, and no file owned by another package may be claimed.
@@ -106,7 +108,7 @@ Existing display manager (user-managed, untouched)
 ### Phase 0 — Inventory, safety checks, and reproducible baseline
 
 - [ ] Use `SamuelFontes/aero-shell-desktop` as the project repository for standalone integration, packaging, patches, and documentation. Track AeroThemePlasma's `Plasma/6.7` branch as a pinned upstream source; record the exact commit SHA.
-- [ ] Pin matching SHAs or tags for all repositories currently fetched by `install.sh`.
+- [ ] Pin full SHAs for all repositories currently fetched by `install.sh` that provide a required default visual or shell component.
 - [ ] Inventory Wayland startup support and classify every shell feature, decoration, effect, and helper as Wayland-ready, requiring a port, or deferred. Do not assume the upstream X11 launcher establishes Wayland support.
 - [ ] Define the minimum Wayland feature set before packaging; X11-only visual extras must not block a usable Wayland desktop.
 - [ ] Record host Plasma/Qt/KF6/KWin versions and compare them with upstream's tested versions.
@@ -114,7 +116,7 @@ Existing display manager (user-managed, untouched)
 - [ ] Enumerate every `install(...)` in the root and dependent projects, including absolute paths, `KDEInstallDirs`, shell scripts, fonts, MIME files, DBus services, desktop entries, user services, polkit, and SDDM files.
 - [ ] Build each component with `DESTDIR` staging; inspect file lists before any host installation.
 - [ ] Run the first end-to-end tests in an Arch/Manjaro VM or disposable test user on a test system, **never by overwriting the production KDE install**.
-- [ ] Classify each upstream change as: private asset, private library/plugin, session-only setting/service, or unacceptable global mutation.
+- [ ] Classify each upstream change as: required private appearance/widget asset, private library/plugin, session-only setting/service, or unacceptable global mutation. Maintain a checklist of what must be visible at first login.
 
 **Deliverable:** `docs/install-inventory.md`, dependency matrix, pinned versions, and staged-file inventory.
 
@@ -123,6 +125,7 @@ Existing display manager (user-managed, untouched)
 ### Phase 1 — Separate installation and packaging roots
 
 - [ ] Add a build option such as `AEROSHELL_STANDALONE=ON`.
+- [ ] Build and install the repository-owned Qt Quick shell as the desktop surface; do not start `startplasma-wayland` or `plasmashell`.
 - [ ] Use an isolated prefix (`/opt/aeroshell`) for upstream projects rather than `/usr`.
 - [ ] Replace hardcoded `/usr`, `/etc/xdg`, and `/usr/local/share` outputs with configured relocatable directories where appropriate.
 - [ ] Set appropriate `CMAKE_INSTALL_LIBDIR`, `CMAKE_INSTALL_LIBEXECDIR`, QML paths, and KPackage/plugin install destinations per component.
@@ -136,27 +139,26 @@ Existing display manager (user-managed, untouched)
 
 **Exit criterion:** All components stage successfully with **zero overwrites** of host KDE files.
 
-### Phase 2 — Isolate `libplasma` and runtime plugins (critical path)
+### Phase 2 — Prove stock runtime loading and keep the core independent of `libplasma`
 
-- [ ] First test whether every AeroShell feature actually requires the patched `libplasma`; document the APIs or behavioral patches used.
-- [ ] If required, build the patched library into `/opt/aeroshell/lib` without replacing `/usr/lib/libplasma*`.
-- [ ] Identify which AeroShell binaries, QML modules, helpers, and KWin plugins must bind to the private library.
-- [ ] Configure component-specific ELF `RUNPATH`/`RPATH` (or limited launch wrappers) and plugin loading so **only AeroShell processes** use the private version.
-- [ ] Keep `LD_LIBRARY_PATH`, `QT_PLUGIN_PATH`, and QML import path changes out of global environment files. Prefer exact binary/plugin-specific paths; any session-wide overrides must be justified and tested against normal applications.
-- [ ] Resolve plugin loading of SMOD, KWin effects, shell packages, QML imports, and custom modules from the private prefix.
+- [ ] The core shell uses distro Qt, KWaylandClient, KIO, KService, and KWin. Verify this dependency set and do not add a private `libplasma` fork to the core.
+- [ ] Record direct and transitive ELF dependencies and prove they resolve from the distro package paths.
+- [ ] Keep `LD_LIBRARY_PATH`, `QT_PLUGIN_PATH`, and QML import path changes out of global environment files. The current shell embeds its QML module and needs no private loader-path injection.
+- [ ] For each required AeroThemePlasma widget/effect using patched `libplasma`, map the exact API need and prove only an AeroShell-owned process loads it. Otherwise port the component into the native shell.
+- [ ] Resolve discovery for every default SMOD/KWin effect per AeroShell KWin process; never install effects where stock KDE KWin loads them automatically.
 - [ ] Validate with `readelf -d`, `ldd`, `/proc/<pid>/maps`, and Qt/KDE plugin debugging (`QT_DEBUG_PLUGINS=1` where appropriate).
-- [ ] Confirm stock Plasma resolves distro libraries while AeroShell resolves only the private forks it needs.
-- [ ] If unmodified `startplasma-*` cannot reliably load the intended private shell/components, provide dedicated AeroShell wrappers or patch/build the necessary launch components **under the private prefix**; do not replace distro launchers.
+- [ ] Confirm ordinary applications launched from AeroShell retain the user's existing XDG settings paths; KWin alone receives the private XDG profile.
+- [ ] Use KWin directly as the session compositor; do not route startup through `startplasma-*`.
 
-**Deliverable:** A test harness starting the AeroShell shell and a Wayland compositor with private dependencies; begin with nested testing, then validate a real login session on test hardware.
+**Deliverable:** A test harness starting the AeroShell Qt Quick shell under distro KWin and a report showing distro ELF/plugin paths. Begin with a nested session, then validate a real login session on a disposable system.
 
-**Exit criterion:** Stock KDE and AeroShell can launch in turn without ELF, QML, KWin, or Qt plugin collisions; distro `libplasma` remains unchanged.
+**Exit criterion:** AeroShell and stock KDE resolve the distro Qt/KWin runtime; no private library or plugin override reaches stock Plasma; distro `libplasma` remains untouched.
 
-**Stop condition:** Do not proceed to an installable package if achieving this requires replacing host `libplasma` or globally injecting an incompatible loader path.
+**Stop condition:** Do not proceed to an installable package if core desktop behavior requires replacing host KDE packages or globally injecting an incompatible loader path.
 
 ### Phase 3 — Isolate user configuration and session state
 
-- [ ] Define an AeroShell settings policy. Candidate: session-scoped `XDG_CONFIG_HOME=$HOME/.config/aeroshell`, `XDG_CACHE_HOME`, and `XDG_STATE_HOME` with AeroShell-specific defaults in `/opt/aeroshell/etc/xdg`.
+- [ ] Define an AeroShell settings policy. KWin gets session-scoped `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_CACHE_HOME`, and `XDG_STATE_HOME` below the user's `aeroshell/kwin` roots; the Qt Quick shell and user apps restore the original XDG roots. AeroShell-owned settings use only the private profile.
 - [ ] Audit `plasmashellrc`, `plasma-org.kde.plasma.desktop-appletsrc`, `kwinrc`, `kdeglobals`, `kscreenlockerrc`, `kglobalshortcutsrc`, appearance, power, notifications, and related state; confirm actual paths from source/runtime traces.
 - [ ] Evaluate `XDG_DATA_HOME` isolation carefully: globally changing it can hide existing `~/.local/share/applications`, icons, or other user-installed items. Implement explicit shared paths or narrower file-level isolation where needed.
 - [ ] Identify programs that ignore XDG paths or hardcode `$HOME/.config` / `$HOME/.local/share`; patch or wrap those only if necessary.
@@ -165,7 +167,7 @@ Existing display manager (user-managed, untouched)
 - [ ] Scope environment changes to AeroShell processes. Do not rely on an exit trap to restore shared activation state after a crash. Any unavoidable shared activation-environment change requires a documented recovery owner and tested recovery after forced termination; otherwise redesign the startup path.
 - [ ] Stop only services owned by the AeroShell session; never stop, restart, or reconfigure unrelated KDE or user services.
 - [ ] Avoid simultaneous KDE + AeroShell graphical sessions for the same user during initial testing unless service/lifetime isolation is explicitly verified.
-- [ ] Use session-scoped fontconfig and QML font-rendering options, never `/etc/environment` or a shared per-user fontconfig file.
+- [ ] Select the default AeroShell font in the session with scoped fontconfig and QML font-rendering options, never `/etc/environment` or shared per-user fontconfig. Noto Sans is bundled as an operating-system dependency and selected automatically; a missing font or first-login import is not an accepted default.
 - [ ] Define whether user-installed plasmoids, launchers, and app defaults are shared or isolated; favor protecting KDE settings over silently losing access to apps.
 
 **Deliverable:** Repeatable first-run profile provisioning, documented shared-versus-private settings policy, and session state cleanup.
@@ -175,9 +177,12 @@ Existing display manager (user-managed, untouched)
 ### Phase 4 — Independent desktop startup and lifecycle
 
 - [ ] Add **AeroShell (Wayland)** to `/usr/share/wayland-sessions/` with a unique launcher under `/usr/bin`.
-- [ ] Set the Aero-specific shell identifier (`PLASMA_DEFAULT_SHELL=io.gitgud.wackyideas.desktop`) and required configuration/asset paths.
-- [ ] Reuse the distro's login/session plumbing where safe; otherwise provide dedicated wrappers for `startplasma-wayland`, D-Bus startup, and session initialization; audit the selected upstream version before choosing which launch components to reuse.
-- [ ] Give AeroShell its own session identity (`DesktopNames`, `XDG_CURRENT_DESKTOP`, and `XDG_SESSION_DESKTOP`) and explicitly configure portal/backend selection for that identity. Document and verify any KDE compatibility identifiers required by reused components; never modify the Plasma session entry or its identity.
+- [ ] Start `kwin_wayland --xwayland --exit-with-session /opt/aeroshell/libexec/aeroshell-shell-session` from the unique Wayland session entry. Do not start Plasma's session manager or shell.
+- [ ] Give AeroShell its own session identity with `XDG_CURRENT_DESKTOP=AeroShell`, `XDG_SESSION_DESKTOP=aeroshell`, and `DESKTOP_SESSION=aeroshell`; configure portal/backend selection for that identity without changing Plasma's entry or user-manager environment.
+- [ ] Use the KWin Wayland shell and window-management protocols to create desktop, panel, popup, and task-list surfaces. Fail clearly if required compositor protocols are absent.
+- [ ] Start with AeroThemePlasma's full default desktop composition: wallpaper on every monitor, icon theme, Aero font, taskbar, Start menu, system tray, clock, show-desktop control, and shipped widgets/gadgets. Persist layout and appearance only in AeroShell's profile.
+- [ ] Inventory every upstream widget/gadget intended for the default desktop. Port it to the native Qt Quick shell or run it in a private audited host; show enabled widgets on first login and keep their settings separate from Plasma applets.
+- [ ] Select icon theme, font, cursor, and shell colors for AeroShell processes and toolkit applications where supported. Do not change global defaults or rewrite shared GTK/KDE settings.
 - [ ] Provide AeroShell-specific settings entry points; exclude modules that mutate shared KDE or display-manager configuration. Any shared application preferences must be documented and must not include KDE desktop settings.
 - [ ] Start the Aero polkit agent **only** in AeroShell; verify that it does not run alongside an existing polkit agent.
 - [ ] Start Aero-specific services, setup wizard, and compositor effects exclusively in the AeroShell session.
@@ -196,7 +201,7 @@ Existing display manager (user-managed, untouched)
 - [ ] Create `packaging/arch/PKGBUILD` (or split packages) with pinned sources/checksums, accurate `depends`, `makedepends`, and runtime compatibility constraints.
 - [ ] Package with `makepkg -si` through pacman; never implement a direct `sudo make install` workflow for end users.
 - [ ] Use **unique package names** and no `conflicts`, `provides`, or `replaces` claims against distro `libplasma`, `kwin`, or `plasma-workspace`.
-- [ ] Split optional assets/effects if this reduces dependency or upgrade fragility; keep a single main meta-package for end users.
+- [ ] Package the appearance assets and dependencies so installation produces the complete AeroThemePlasma default setup automatically. Keep runtime resources under AeroShell-owned paths.
 - [ ] Ensure install does not automatically change the default SDDM session, login theme, shell, desktop defaults, or system environment.
 - [ ] Uninstall removes only package-owned binaries, session entries, and bundled resources. **Do not delete any user configuration automatically.** Provide an optional documented profile-cleanup command.
 - [ ] Test clean install, reinstall, upgrade, dependency failure, rollback, and removal; ensure KDE can launch at each step.
@@ -230,8 +235,8 @@ Existing display manager (user-managed, untouched)
 | SDDM and other display managers | No AeroShell writes to configuration, theme, services, defaults, or remembered selection; normal user-driven selection is allowed | Yes |
 | Independent desktop identity | AeroShell owns its startup, profile, settings entry points, and session services | Yes |
 | Failed startup / lingering user manager | No AeroShell environment, services, or settings leak into Plasma | Yes |
-| First AeroShell login | Aero taskbar, shell, widgets, decorations load | Yes |
-| Configure Aero appearance | No change in existing KDE profile | Yes |
+| First AeroShell login | Complete AeroThemePlasma default: taskbar, Start menu, widgets, wallpaper, icons, fonts, cursor, sounds, notifications, and Wayland-safe decorations/effects are configured | Yes |
+| Configure Aero appearance/widgets | Defaults are active on first login; later changes affect only AeroShell's profile | Yes |
 | Log into stock KDE | Original layout/settings preserved | Yes |
 | Standard applications | Work in either session | Yes |
 | KWin effects | Aero-only effects do not alter regular KDE | Yes |
@@ -251,7 +256,7 @@ Existing display manager (user-managed, untouched)
 | Risk | Impact | Mitigation |
 |---|---|---|
 | Patched `libplasma` shares SONAME/ABI with distro library | Wrong copy loaded, breakage in either desktop | Per-process loading, verified binary/linker paths, no global overrides |
-| X11-only upstream effects or helpers | Missing or broken Wayland visuals/features | Audit early; port required features and defer optional extras without blocking Wayland |
+| X11-only upstream effects or helpers | Missing or broken Wayland visuals/features | Audit early; port every feature included in the default desktop and defer only non-default X11 extras without blocking Wayland |
 | KWin plugin ABI changes frequently | Effects crash or silently fail after upgrades | Pin supported versions; rebuild and compatibility gate |
 | KDE services run through a persistent systemd user manager | Settings/environment leak across sessions | Import/scrub environment deliberately; test logout-login cycles and lingering services |
 | Upstream installers use absolute `/usr` paths | File conflicts with KDE packages | Audit every CMake install/manifest; patch and stage with `DESTDIR` |
@@ -260,7 +265,7 @@ Existing display manager (user-managed, untouched)
 | Plugin/QML search paths leak to child applications | Unexpected Qt crashes/compatibility bugs | Scope search paths to Aero processes rather than all programs |
 | Fonts, MIME, polkit, or login integration change system behavior | Changes visible in regular KDE | Keep AeroShell customization session-local; exclude all display-manager customization |
 | Arch rolling updates move beyond upstream branch | Build or runtime failures | Version detection, strict compatibility matrix, rebuild automation |
-| Proprietary Windows 7 artwork/fonts have redistribution constraints | Unusable binaries for public packages | Audit licenses and use lawful sources/user-provided assets; do not redistribute restricted files |
+| A local appearance asset is unavailable on a clean install | Incomplete first-login desktop | Bundle the selected icons, cursor, wallpaper, font dependency, GTK style, and widget resources with AeroShell; user-directed rights verification is not a completion gate |
 
 ## 7. Repository organization (proposed)
 
@@ -383,11 +388,11 @@ Create `docs/decisions/0001-runtime.md`, `0002-profile.md`, and `0003-services.m
 
 ### 11.3 Minimum desktop versus deferred visual work
 
-Required: independent login/logout; usable panel/taskbar, launcher, desktop background, window decorations and window controls; notifications and tray; keyboard/mouse input; application launch; network/audio controls through existing system services; display configuration; lock/unlock; polkit prompts; portals; and a settings surface limited to AeroShell-owned desktop preferences. Existing system network/audio services may be consumed without replacing their system configuration.
+Required: independent login/logout; complete AeroThemePlasma default composition and widgets (see `docs/default-appearance.md`); usable panel/taskbar, launcher, desktop background, window decorations and window controls; notifications and tray; keyboard/mouse input; application launch; network/audio controls through existing system services; display configuration; lock/unlock; polkit prompts; portals; and a settings surface limited to AeroShell-owned desktop preferences. Existing system network/audio services may be consumed without replacing their system configuration.
 
 Required compatibility: native Wayland and XWayland applications; clipboard and drag and drop; multi-monitor hotplug; supported scaling configurations; screenshots and screen sharing; suspend/resume. Record the exact tested hardware and versions. A VM pass cannot establish GPU or physical hotplug support.
 
-Deferred: X11 desktop login, exact reproduction of every Windows 7 animation, X11-only glow, optional sounds, and effects without a working Wayland port. Do not defer safe configuration, authentication, screen locking, or KDE isolation for visual fidelity.
+Deferred: X11 desktop login, exact reproduction of every Windows 7 animation, and X11-only effects without a working Wayland port. Sounds, default widgets, wallpaper/icons/font selection, safe configuration, authentication, screen locking, and KDE isolation are required, not optional polish.
 
 ## 12. Ordered implementation tasks
 
@@ -406,11 +411,12 @@ Deferred: X11 desktop login, exact reproduction of every Windows 7 animation, X1
 
 **Dependencies:** T00 documentation available.
 
-**Outputs:** `upstream/sources.lock.json`, `docs/upstream-audit.md`.
+**Outputs:** `upstream/sources.lock.json`, `scripts/validate-sources-lock.py`, `docs/source-lock-format.md`, `docs/upstream-audit.md`.
 
 - Inspect the actual upstream branch, installer, build files, and recursively fetched projects without executing installer code.
-- Each source record contains unique component name, canonical fetch URL, full commit SHA, license location, required/optional status, patch directory, and build dependencies. Do not store credentials in URLs.
+- Each source record contains a unique component name, canonical fetch URL, full commit SHA, required/optional status, patch directory, and build dependencies. An optional license path may be retained as provenance but does not gate completion. Do not store credentials in URLs.
 - Record branch/tag as explanatory metadata only; build selection uses the full pinned SHA. Reject missing sources, duplicate names, mutable-only refs, and dependency cycles.
+- Validate the completed lock before any fetch or configure step. Excluded SDDM components must have no fetchable source metadata and cannot appear as a dependency.
 - Record SDDM-related components as excluded; do not fetch/build them as runtime dependencies.
 
 **Acceptance:** Every selected source resolves to a real revision; dependency graph is acyclic; upstream assertions in section 2 are either supported by evidence or corrected. Network failure blocks source verification.
@@ -421,7 +427,7 @@ Deferred: X11 desktop login, exact reproduction of every Windows 7 animation, X1
 
 **Outputs:** `docs/install-inventory.md`, `docs/wayland-features.md`, initial `docs/compatibility.md`.
 
-- For every component list build system, install outputs, absolute paths, custom commands, post-install actions, services, D-Bus names, plugins, configuration writes, and license constraints.
+- For every component list build system, install outputs, absolute paths, custom commands, post-install actions, services, D-Bus names, plugins, and configuration writes.
 - Trace actual Wayland startup from login entry to compositor, shell, agents, and shutdown. Identify environment imports and user-manager activation explicitly.
 - Map every minimum desktop feature to its provider, source evidence, Wayland status, private-prefix support, and required patch or test.
 - List supported candidate Plasma/KWin/Qt/KF versions as unverified until built. Do not infer compatibility from a branch label.
@@ -432,7 +438,7 @@ Deferred: X11 desktop login, exact reproduction of every Windows 7 animation, X1
 
 **Dependencies:** T02.
 
-**Outputs:** `packaging/install-policy.json`, `scripts/audit-install-manifests.sh`, `tests/test-no-conflicts.sh`.
+**Outputs:** `packaging/install-policy.json`, `scripts/audit-install-manifests.py`, `tests/test-install-policy.py`.
 
 - Default deny all destinations. Initially allow only files below `/opt/aeroshell/` and exact integration files `/usr/bin/aeroshell-session-wayland` and `/usr/share/wayland-sessions/aeroshell.desktop`.
 - Represent additional uniquely named integration files as explicit reviewed policy entries. Private service/portal assets remain inside the prefix unless source evidence requires an integration path.
@@ -444,17 +450,16 @@ Deferred: X11 desktop login, exact reproduction of every Windows 7 animation, X1
 
 ### T04 — Build the smallest dependency closure privately
 
-**Dependencies:** T01–T03.
+**Dependencies:** T02–T03. Upstream asset pins from T01 are not required to build the repository-owned shell core.
 
-**Outputs:** `scripts/build.sh`, `cmake/StandaloneInstallPaths.cmake`, ordered `patches/<component>/series`, patch explanations.
+**Outputs:** root `CMakeLists.txt`, `src/shell/`, staged Qt Quick shell and session integration, build evidence.
 
-- Provide documented arguments for source lock, build directory, staging directory, and selected component. Resolve local workspace paths without hardcoded developer home directories.
-- Fetch exact sources, verify pins, apply the recorded patch series, configure, build, and stage. Stop on errors; never continue packaging a partially staged build.
-- Initial build order follows the discovered dependency graph. Start with stock distro libraries where feasible; add private forks only when T05 evidence requires them.
-- Use private-prefix CMake paths. A representative configure/stage sequence is `cmake -S <source> -B <build> -DCMAKE_INSTALL_PREFIX=/opt/aeroshell`, `cmake --build <build>`, then `DESTDIR=<stage> cmake --install <build>`. Actual flags come from each audited component.
+- Build the shell against stock Qt 6, KWaylandClient, KIO, KService, and KWin runtime dependencies. Do not vendor or replace distro KDE libraries.
+- Use private-prefix CMake paths and explicit session integration destinations. A representative configure/stage sequence is `cmake -S . -B <build> -DCMAKE_INSTALL_PREFIX=/opt/aeroshell`, `cmake --build <build>`, then `DESTDIR=<stage> cmake --install <build>`.
+- Keep upstream appearance/widget builds as separately audited components after exact pins and their file manifests are verified; they are required contents of the complete first-login desktop, not optional customization.
 - No `sudo`, `make install` to live root, implicit host package installation, or automatic interactive login. Print missing prerequisites and stop.
 
-**Acceptance:** Repeated builds from the same pins produce equivalent file inventories in a clean environment; the staged tree passes T03. Bit-for-bit binary reproducibility is a separate claim and is not required by this inventory check.
+**Acceptance:** A clean local build and a second clean build produce equivalent staged file inventories; the current staged tree passes T03 and contains only `/opt/aeroshell` runtime files plus the two reviewed session integration entries. Bit-for-bit binary reproducibility is a separate claim.
 
 ### T05 — Prove library and plugin selection
 
@@ -462,21 +467,21 @@ Deferred: X11 desktop login, exact reproduction of every Windows 7 animation, X1
 
 **Outputs:** completed `docs/decisions/0001-runtime.md`, `scripts/verify-library-loading.sh`, `docs/runtime-loading.md`.
 
-- Compare stock and patched `libplasma` behavior for the required shell; map each necessary patch to a feature. Choose stock if sufficient.
-- Inventory direct and transitive ELF dependencies, Qt plugins, QML modules, KPackage assets, KWin effects, and decorations per process. Record actual binary/plugin paths and loaded mappings.
-- If private libraries are necessary, rebuild the exact shell/helpers that require them. Do not assume a wrapper or an executable RUNPATH controls every transitive dependency or dynamically loaded plugin.
-- Test a nested Wayland compositor/shell in an isolated test account with a separate graphical session context. Discover supported nested invocation flags from pinned sources/help; do not hardcode guessed flags.
+- Inventory direct/transitive ELF dependencies, Qt plugins, KWayland protocols, and KWin integration per process. Record actual binary/plugin paths and loaded mappings.
+- The core shell must use the distro's KWin/Qt/KWayland/KF libraries and must not load AeroThemePlasma's `libplasma` fork.
+- If optional private libraries are later necessary, rebuild only the exact AeroShell binary/plugin that needs them and verify every dynamic lookup path.
+- Test a nested Wayland compositor/shell in an isolated test account with a private session bus and profile. Discover flags from installed KWin help; do not hardcode guessed flags.
 - Launch representative unrelated Qt/KDE applications from AeroShell and confirm they do not inherit private library/plugin overrides.
 
-**Acceptance:** Evidence identifies the intended library/plugin for each AeroShell process and stock dependencies for ordinary applications. No incompatible copies of a library are loaded into one process. A real session still requires T09; nested operation alone is insufficient.
+**Acceptance:** Evidence identifies distro libraries for the shell and normal applications; no incompatible duplicate library is loaded into one process. A real session still requires T09; mocked startup or nested operation alone is insufficient.
 
 ### T06 — Implement private profile provisioning
 
 **Dependencies:** T02, T05.
 
-**Outputs:** `session/profile.sh` or equivalent private helper, `defaults/xdg/`, completed `docs/decisions/0002-profile.md`, `tests/test-profile.sh`.
+**Outputs:** session XDG profile provisioning, completed `docs/decisions/0002-profile.md`, `tests/test-session-launch.sh`.
 
-- Compute AeroShell roots from the user's original absolute XDG base directories, falling back to standard home paths, then append `aeroshell` once. Preserve original values for shared application discovery; reject invalid relative XDG paths consistently with the chosen implementation policy.
+- Compute AeroShell roots from the user's original absolute XDG base directories, falling back to standard home paths, then append `aeroshell` once. Set only KWin's XDG roots to the private `kwin/{config,data,cache,state}` subdirectories; restore the original roots before starting the shell and applications.
 - Never change `HOME` or `XDG_RUNTIME_DIR`. Keep runtime files in a uniquely owned subdirectory of the existing user runtime directory with restrictive permissions.
 - Create private directories without following an existing malicious/accidental symlink into the KDE profile. Copy initial defaults only when absent; keep a profile version marker.
 - Repeated initialization preserves customization. Failed provisioning leaves either a complete initial profile or a retryable state. Future migrations affect only private files and preserve user values.
@@ -524,24 +529,26 @@ The desktop entry uses `Type=Application`, `Name=AeroShell (Wayland)`, an absolu
 
 - Capture a stock Plasma baseline with the desktop logged out to avoid background settings writes confusing the comparison.
 - Install only the audited staged package candidate on the disposable system and select AeroShell manually from its existing login screen.
-- Exercise panel, launcher, background, window controls, keyboard/mouse, tray, notifications, terminal, audio/network UI, and logout. Confirm XWayland is session-owned when needed.
+- Exercise the login, AeroShell desktop/panel/launcher, KWin window management, keyboard/mouse, application launch, XWayland startup, and normal logout. Tray, notifications, network/audio controls, authentication, lock, and portals are completed and validated by T10/T11 after their service ownership is resolved.
 - Return to Plasma and compare package ownership/files, relevant desktop settings, enabled units, activation environment, and active processes against baseline. Explain unavoidable benign differences rather than silently excluding changed files.
 - Repeat switching at least three complete cycles. Record actual test output and observations.
 
 **Acceptance:** The minimum shell works on a real Wayland login, stock Plasma retains its layout/settings, and no AeroShell process or loader override remains after logout. No SDDM writes originate from AeroShell.
 
-### T10 — Add Wayland-safe appearance and settings
+### T10 — Port and enable the complete AeroThemePlasma appearance and settings
 
-**Dependencies:** T09.
+**Dependencies:** T09, T01, T02.
 
-**Outputs:** selected defaults/assets/effects, `docs/settings-scope.md`, feature-status updates.
+**Outputs:** pinned/default assets and widget ports, first-run AeroShell layout, `docs/default-appearance.md`, `docs/settings-scope.md`, feature-status updates.
 
+- Deliver the complete widget/resource inventory in `docs/default-appearance.md`, not a placeholder blue gradient. Map every packaged upstream widget and relevant default feature to a working AeroShell implementation.
+- Copy the upstream default layout/assets into the AeroShell profile on first login only. Persist later user changes, including wallpaper/font/icon choices, under AeroShell's private settings paths.
 - Add one decoration/effect/settings category per subtask. Record private install locations and configuration keys before enabling it.
 - Ship only settings modules demonstrated to write to the private profile. Do not expose an unfiltered generic KDE System Settings entry as the AeroShell desktop settings UI.
-- Verify icon/font/theme changes stay session-local and ordinary applications remain usable. Keep library search variables separate from application appearance variables.
+- Verify icon/font/theme changes stay session-local and ordinary applications remain usable. Scope toolkit appearance environment to AeroShell-launched apps, and keep it separate from library/plugin search paths.
 - Treat shared application preferences such as a browser profile as shared by design; AeroShell setup must not rewrite them to enforce desktop appearance.
 
-**Acceptance:** Each settings control changes only documented AeroShell state. Plasma appearance remains unchanged after all categories are exercised. Optional broken effects remain disabled and documented.
+**Acceptance:** The complete supported AeroThemePlasma appearance and widget layout are active at first login. Each settings control changes only documented AeroShell state. Plasma appearance remains unchanged after all categories are exercised. Any Wayland-incompatible part has a named shell-native replacement or an explicit failed acceptance row; it is not silently omitted.
 
 ### T11 — Complete Wayland integration and security behavior
 
@@ -634,7 +641,8 @@ Run on disposable systems only:
 ## 13. Task dependencies and execution prompts
 
 ```text
-T00 → T01 → T02 → T03 → T04 → T05 → T06 → T07 → T08 → T09
+T00 → T02 → T03 → T04 → T05 → T06 → T07 → T08 → T09
+T01 → required upstream appearance/assets and widget inventory (T10)
 T09 → T10     
 T09 + T07 → T11
 T05 + T09 → T12
@@ -643,7 +651,7 @@ T03 + T04 + T12 + T13 → T15
 T10–T15 → T16      
 ```
 
-The task headings are authoritative for dependencies; the sketch shows the main sequence. T12 starts from the minimal working session and is updated for features added in T10/T11. Never bypass an isolation gate to start packaging early.
+The task headings are authoritative for dependencies; the sketch shows the main sequence. T01 pins only upstream content that is actually selected, and does not block the repository-owned Wayland shell core. T12 starts from the minimal working session and is updated for features added in T10/T11. Never bypass an isolation gate to start packaging early.
 
 Reusable implementation prompt:
 
@@ -672,4 +680,4 @@ Before declaring the desktop ready, all of the following must hold:
 - No unresolved required Wayland feature, KDE write, package conflict, stale activation variable, or orphaned AeroShell agent remains.
 - No install/uninstall hook touches display-manager configuration or the Plasma profile.
 - Stock Plasma has been exercised after install, AeroShell customization, forced failure, upgrade, and removal.
-- The package remains a standalone desktop session even when optional Aero styling/effects are disabled.
+- The package remains an independent desktop session with the required AeroThemePlasma appearance active; display-manager branding remains user-managed.

@@ -1,0 +1,6 @@
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><linearGradient id="gold" x2="0" y2="1"><stop stop-color="#fff4ae"/><stop offset=".56" stop-color="#f5c545"/><stop offset="1" stop-color="#d99826"/></linearGradient><linearGradient id="arrow" x2="0" y2="1"><stop stop-color="#e7fbff"/><stop offset="1" stop-color="#70b6dc"/></linearGradient></defs>
+  <path d="M5 15a5 5 0 0 1 5-5h17l7 7h20a5 5 0 0 1 5 5v27a5 5 0 0 1-5 5H10a5 5 0 0 1-5-5z" fill="url(#gold)" stroke="#b77b1d" stroke-width="2"/>
+  <path d="M31 22h8v13h8L35 49 23 35h8z" fill="url(#arrow)" stroke="#5589a7" stroke-width="2" stroke-linejoin="round"/>
+</svg>

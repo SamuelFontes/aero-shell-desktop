@@ -1,0 +1,9 @@
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><linearGradient id="screen" x2="0" y2="1"><stop stop-color="#b6edff"/><stop offset="1" stop-color="#3686bd"/></linearGradient><linearGradient id="case" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#a8c5d7"/></linearGradient></defs>
+  <rect x="5" y="8" width="44" height="34" rx="4" fill="url(#case)" stroke="#587e98" stroke-width="2"/>
+  <rect x="9" y="12" width="36" height="25" rx="2" fill="url(#screen)"/>
+  <path d="M20 43v6h14v-6M14 53h27" fill="none" stroke="#587e98" stroke-width="3" stroke-linecap="round"/>
+  <rect x="48" y="19" width="11" height="37" rx="3" fill="url(#case)" stroke="#587e98" stroke-width="2"/>
+  <circle cx="53.5" cy="48" r="2" fill="#50a9dc"/>
+</svg>

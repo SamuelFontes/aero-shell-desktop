@@ -1,0 +1,9 @@
+[org.kde.kdecoration2]
+ButtonsOnLeft=MS
+ButtonsOnRight=IAX
+library=org.kde.kwin.aurorae.v2
+theme=__aurorae__svg__Se7enAero
+
+[Plugins]
+blurEnabled=true
+glideEnabled=true

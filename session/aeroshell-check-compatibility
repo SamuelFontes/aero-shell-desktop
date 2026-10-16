@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+die() {
+    printf 'AeroShell compatibility check: %s\n' "$*" >&2
+    exit 1
+}
+
+[[ $# -eq 1 && -x "$1" ]] || die 'usage: aeroshell-check-compatibility /path/to/kwin_wayland'
+kwin="$1"
+
+version_output="$(LC_ALL=C "$kwin" --version 2>&1)" \
+    || die "could not read the installed KWin version: $version_output"
+if [[ "$version_output" =~ ([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+    actual_version="${BASH_REMATCH[0]}"
+else
+    die "could not parse the installed KWin version from: $version_output"
+fi
+
+# The supported KWin API baseline is intentionally exact until an integration
+# run proves another release. Never launch an unverified compositor version.
+[[ "$actual_version" == "6.7.4" ]] \
+    || die "KWin $actual_version is outside this build's current target of 6.7.4; another release needs a real integration run before support is added."
+
+help_output="$(LC_ALL=C "$kwin" --help 2>&1)" \
+    || die 'could not inspect KWin command-line options'
+for option in --xwayland --desktopfile --exit-with-session --lockscreen; do
+    [[ "$help_output" == *"$option"* ]] || die "KWin $actual_version does not support required option $option."
+done

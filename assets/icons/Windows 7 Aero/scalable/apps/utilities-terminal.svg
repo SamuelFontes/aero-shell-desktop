@@ -1,0 +1,8 @@
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><linearGradient id="glass" x2="0" y2="1"><stop stop-color="#fff" stop-opacity=".94"/><stop offset=".16" stop-color="#b5e8ff" stop-opacity=".9"/><stop offset=".52" stop-color="#528bb7" stop-opacity=".96"/><stop offset="1" stop-color="#244d72"/></linearGradient></defs>
+  <rect x="5" y="8" width="54" height="48" rx="9" fill="url(#glass)" stroke="#dff7ff" stroke-width="2"/>
+  <path d="m17 23 10 9-10 9" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M34 42h13" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+  <path d="M11 14h42" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+</svg>

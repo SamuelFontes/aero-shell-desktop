@@ -1,0 +1,6 @@
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><linearGradient id="metal" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#8aadc2"/></linearGradient></defs>
+  <path d="m27 5 10 0 2 8 6 3 7-4 7 8-5 7 1 7 6 5-4 10-9-1-5 5-1 8H25l-2-8-6-3-7 4-7-8 5-7-1-7-6-5 4-10 9 1 5-5 1-8z" fill="url(#metal)" stroke="#4c7895" stroke-width="2" transform="translate(3 0)"/>
+  <circle cx="32" cy="32" r="11" fill="#58aada" stroke="#fff" stroke-width="4"/>
+</svg>

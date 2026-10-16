@@ -1,0 +1,15 @@
+[Daemon]
+Autolock=true
+Lock=true
+LockGrace=5
+LockOnResume=true
+LockOnStart=false
+RequirePassword=true
+Timeout=5
+
+[Greeter]
+LookAndFeel=org.aeroshell.desktop
+WallpaperPlugin=org.kde.image
+
+[Greeter][Wallpaper][org.kde.image][General]
+Image=file:///opt/aeroshell/share/aeroshell/wallpapers/aerothemeplasma-default.jpg

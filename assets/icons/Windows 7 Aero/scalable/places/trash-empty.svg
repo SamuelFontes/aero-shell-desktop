@@ -1,0 +1,7 @@
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><linearGradient id="can" x2="0" y2="1"><stop stop-color="#f8fdff"/><stop offset="1" stop-color="#8fb4c8"/></linearGradient></defs>
+  <path d="M17 17h30l-3 38H20z" fill="url(#can)" stroke="#52768b" stroke-width="2"/>
+  <path d="M13 13h38M24 9h16" fill="none" stroke="#52768b" stroke-width="3" stroke-linecap="round"/>
+  <path d="M26 24v23M38 24v23" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,6 @@
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect x="4" y="9" width="23" height="15" rx="3" fill="#e8fff0" stroke="#fff" stroke-width="2"/>
+  <path d="M28 13h2v7h-2z" fill="#fff"/>
+  <rect x="7" y="12" width="6" height="9" rx="1.5" fill="#ffc857"/>
+</svg>

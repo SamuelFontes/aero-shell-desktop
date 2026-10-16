@@ -1,0 +1,12 @@
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><radialGradient id="orb" cx=".32" cy=".24"><stop stop-color="#fff"/><stop offset=".18" stop-color="#bdfffe"/><stop offset=".5" stop-color="#55bdec"/><stop offset=".78" stop-color="#1880cc"/><stop offset="1" stop-color="#075396"/></radialGradient><linearGradient id="shine" x2="0" y2="1"><stop stop-color="#fff" stop-opacity=".82"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+  <circle cx="32" cy="32" r="28" fill="url(#orb)" stroke="#eefcff" stroke-width="2"/>
+  <g stroke="#ffffff" stroke-opacity=".78" stroke-width=".6" stroke-linejoin="round">
+    <path d="M13 22 28 18v12l-15 2z" fill="#f36c54"/>
+    <path d="m30 17 14-3v15l-14 1z" fill="#72c84d"/>
+    <path d="m13 34 15-2v13l-15-3z" fill="#39a7ed"/>
+    <path d="m30 31 14-1v16l-14-1z" fill="#f4c74e"/>
+  </g>
+  <path d="M11 24c5-11 16-17 27-14 7 2 12 6 15 12-9-5-23-5-42 2z" fill="url(#shine)"/>
+</svg>

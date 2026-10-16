@@ -1,0 +1,71 @@
+# Maintainer: Samuel Fontes
+pkgname=aeroshell-desktop-git
+pkgver=0.1.0.r1.g0000000
+pkgrel=1
+pkgdesc='Independent Wayland desktop with preconfigured AeroThemePlasma defaults'
+arch=('x86_64' 'aarch64')
+url='https://github.com/SamuelFontes/aero-shell-desktop'
+license=('MIT' 'CC0-1.0')
+depends=(
+  'kwin>=6.7.4'
+  'kwin<6.7.5'
+  'dbus'
+  'kscreenlocker'
+  'plasma-workspace'
+  'plasma5support'
+  'qt6-base>=6.8'
+  'qt6-declarative>=6.8'
+  'qt6-quickcontrols2'
+  'qt6-svg'
+  'qt6-5compat'
+  'qt6-multimedia'
+  'kio'
+  'kservice'
+  'kwayland>=6.7.4'
+  'polkit-qt6'
+  'networkmanager'
+  'noto-fonts'
+  'adwaita-icon-theme'
+  'xdg-desktop-portal'
+  'xdg-desktop-portal-gtk'
+  'xdg-desktop-portal-kde'
+)
+makedepends=('cmake' 'ninja' 'git' 'python' 'desktop-file-utils')
+optdepends=(
+  'wireplumber: Volume controls through wpctl'
+  'pulseaudio: Volume controls through pactl'
+)
+provides=('aeroshell-desktop')
+conflicts=('aeroshell-desktop')
+source=("${pkgname}::git+${url}.git")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "${srcdir}/${pkgname}"
+  printf '0.1.0.r%s.g%s\n' "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+  cd "${srcdir}/${pkgname}"
+  cmake -S . -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/opt/aeroshell
+  cmake --build build
+}
+
+check() {
+  cd "${srcdir}/${pkgname}"
+  qmllint -I build/qmltypes -I /usr/lib/qt6/qml src/shell/qml/*.qml
+  qmllint -I build/qmltypes -I /usr/lib/qt6/qml \
+    assets/plasma/look-and-feel/org.aeroshell.desktop/contents/lockscreen/*.qml
+  desktop-file-validate session/aeroshell.desktop
+  ctest --test-dir build --output-on-failure
+  python tests/test-install-policy.py
+  python tests/test-source-lock.py
+}
+
+package() {
+  cd "${srcdir}/${pkgname}"
+  DESTDIR="${pkgdir}" cmake --install build
+  python scripts/audit-install-manifests.py --stage-root "${pkgdir}"
+}

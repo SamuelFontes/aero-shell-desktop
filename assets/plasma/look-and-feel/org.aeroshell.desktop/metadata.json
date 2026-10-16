@@ -1,0 +1,25 @@
+{
+  "KPackageStructure": "Plasma/LookAndFeel",
+  "KPlugin": {
+    "Authors": [
+      {
+        "Email": "wackyideas@disroot.org",
+        "Name": "wackyideas"
+      },
+      {
+        "Name": "dominichayesferen"
+      }
+    ],
+    "Category": "",
+    "Description": "AeroThemePlasma lock screen for the independent AeroShell Wayland desktop",
+    "Icon": "user-desktop",
+    "Id": "org.aeroshell.desktop",
+    "License": "AGPLv3",
+    "Name": "AeroShell Aero",
+    "Version": "2.0",
+    "Website": "https://gitgud.io/wackyideas/aerothemeplasma"
+  },
+  "Keywords": "",
+  "X-KDE-ParentApp": "org.aeroshell.desktop",
+  "X-Plasma-APIVersion": "2"
+}

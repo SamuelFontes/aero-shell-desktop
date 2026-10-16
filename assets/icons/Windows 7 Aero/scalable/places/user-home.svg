@@ -1,0 +1,8 @@
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><linearGradient id="roof" x2="0" y2="1"><stop stop-color="#f9ffff"/><stop offset="1" stop-color="#6aadda"/></linearGradient><linearGradient id="wall" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#cce6f4"/></linearGradient></defs>
+  <path d="m5 31 27-22 27 22-5 6-5-4v22H16V33l-6 4z" fill="url(#roof)" stroke="#527d99" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M20 31h24v24H20z" fill="url(#wall)" stroke="#779bb0" stroke-width="2"/>
+  <path d="M28 40h8v15h-8z" fill="#80bde1" stroke="#527d99" stroke-width="2"/>
+  <path d="m12 29 20-16 20 16" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".8"/>
+</svg>

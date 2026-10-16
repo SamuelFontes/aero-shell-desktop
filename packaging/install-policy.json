@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "allow_exact": [
+    "/usr/bin/aeroshell-session-wayland",
+    "/usr/share/wayland-sessions/aeroshell.desktop",
+    "/usr/share/xdg-desktop-portal/aeroshell-portals.conf"
+  ],
+  "allow_prefixes": [
+    "/opt/aeroshell/"
+  ],
+  "allow_parent_directories": [
+    "/",
+    "/opt",
+    "/usr",
+    "/usr/bin",
+    "/usr/share",
+    "/usr/share/wayland-sessions",
+    "/usr/share/xdg-desktop-portal"
+  ],
+  "deny_prefixes": [
+    "/etc/",
+    "/usr/lib/sddm/",
+    "/usr/share/sddm/",
+    "/usr/lib/systemd/",
+    "/usr/lib/systemd/user/",
+    "/usr/share/dbus-1/"
+  ],
+  "deny_path_substrings": [
+    "sddm"
+  ]
+}

@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+restore_xdg_root() {
+    local name="$1" value="$2"
+    if [[ -n "$value" ]]; then
+        export "$name=$value"
+    else
+        unset "$name"
+    fi
+}
+
+restore_xdg_root XDG_CONFIG_HOME "${AEROSHELL_USER_XDG_CONFIG_HOME:-}"
+restore_xdg_root XDG_DATA_HOME "${AEROSHELL_USER_XDG_DATA_HOME:-}"
+restore_xdg_root XDG_CACHE_HOME "${AEROSHELL_USER_XDG_CACHE_HOME:-}"
+restore_xdg_root XDG_STATE_HOME "${AEROSHELL_USER_XDG_STATE_HOME:-}"
+unset AEROSHELL_USER_XDG_CONFIG_HOME AEROSHELL_USER_XDG_DATA_HOME
+unset AEROSHELL_USER_XDG_CACHE_HOME AEROSHELL_USER_XDG_STATE_HOME
+
+[[ -n "${HOME:-}" && "$HOME" == /* ]] || {
+    printf 'AeroShell: HOME must be an absolute path.\n' >&2
+    exit 1
+}
+user_config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
+[[ "$user_config_home" == /* && "$user_config_home" != "/" ]] || {
+    printf 'AeroShell: XDG_CONFIG_HOME must be an absolute non-root path.\n' >&2
+    exit 1
+}
+aeroshell_config_dir="${user_config_home%/}/aeroshell"
+aeroshell_settings_file="$aeroshell_config_dir/settings.ini"
+[[ ! -L "$aeroshell_config_dir" ]] || {
+    printf 'AeroShell: refusing to use a symlinked settings directory: %s\n' "$aeroshell_config_dir" >&2
+    exit 1
+}
+[[ ! -e "$aeroshell_config_dir" || -d "$aeroshell_config_dir" ]] || {
+    printf 'AeroShell: settings path is not a directory: %s\n' "$aeroshell_config_dir" >&2
+    exit 1
+}
+[[ ! -L "$aeroshell_settings_file" ]] || {
+    printf 'AeroShell: refusing to use a symlinked settings file: %s\n' "$aeroshell_settings_file" >&2
+    exit 1
+}
+[[ ! -e "$aeroshell_settings_file" || -f "$aeroshell_settings_file" ]] || {
+    printf 'AeroShell: settings path is not a regular file: %s\n' "$aeroshell_settings_file" >&2
+    exit 1
+}
+if [[ -e "$aeroshell_settings_file" ]]; then
+    settings_link_count="$(stat -c '%h' -- "$aeroshell_settings_file")" || {
+        printf 'AeroShell: cannot inspect its private settings file: %s\n' "$aeroshell_settings_file" >&2
+        exit 1
+    }
+    [[ "$settings_link_count" == 1 ]] || {
+        printf 'AeroShell: refusing to use a shared settings file with %s hard links: %s\n' \
+            "$settings_link_count" "$aeroshell_settings_file" >&2
+        exit 1
+    }
+fi
+mkdir -p -- "$aeroshell_config_dir" || {
+    printf 'AeroShell: cannot create its private settings directory: %s\n' "$aeroshell_config_dir" >&2
+    exit 1
+}
+
+install_prefix="${AEROSHELL_PREFIX:-/opt/aeroshell}"
+[[ "$install_prefix" == /* ]] || {
+    printf 'AeroShell: AEROSHELL_PREFIX must be absolute.\n' >&2
+    exit 1
+}
+shell_executable="$install_prefix/bin/aeroshell-shell"
+[[ -x "$shell_executable" ]] || {
+    printf 'AeroShell: shell executable is missing: %s\n' "$shell_executable" >&2
+    exit 1
+}
+exec "$shell_executable" "$@"

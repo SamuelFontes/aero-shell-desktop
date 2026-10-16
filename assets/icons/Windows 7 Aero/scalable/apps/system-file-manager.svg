@@ -1,0 +1,8 @@
+<!-- SPDX-License-Identifier: CC0-1.0 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><linearGradient id="body" x2="0" y2="1"><stop stop-color="#fff"/><stop offset=".48" stop-color="#cfeeff"/><stop offset="1" stop-color="#73b8e3"/></linearGradient><linearGradient id="folder" x2="0" y2="1"><stop stop-color="#fff4a4"/><stop offset="1" stop-color="#e6a629"/></linearGradient></defs>
+  <rect x="5" y="8" width="54" height="48" rx="8" fill="url(#body)" stroke="#4a7c9e" stroke-width="2"/>
+  <path d="M8 19h18l5 5h25v24a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4z" fill="url(#folder)" stroke="#b87b1a" stroke-width="2"/>
+  <path d="M10 29h43l-4 17H13z" fill="#fff3c2" opacity=".62"/>
+  <path d="M8 14h48" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".8"/>
+</svg>
