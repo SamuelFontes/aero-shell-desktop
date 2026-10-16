@@ -61,6 +61,7 @@ int main(int argc, char **argv)
     const QByteArray fakeWpctl = QByteArrayLiteral(
         "#!/bin/sh\n"
         "if [ \"$1\" = get-volume ]; then\n"
+        "  [ \"$LC_ALL\" = C ] || exit 99\n"
         "  /bin/cat \"$AEROSHELL_TEST_AUDIO_STATE\"\n"
         "else\n"
         "  printf '%s\\n' \"$*\" >> \"$AEROSHELL_TEST_AUDIO_CALLS\"\n"
@@ -77,6 +78,7 @@ int main(int argc, char **argv)
     qputenv("PATH", temporaryDirectory.path().toLocal8Bit());
     qputenv("AEROSHELL_TEST_AUDIO_STATE", statePath.toLocal8Bit());
     qputenv("AEROSHELL_TEST_AUDIO_CALLS", callsPath.toLocal8Bit());
+    qputenv("LC_ALL", "C.UTF-8");
 
     AudioControl audio;
     if (audio.backend() != QLatin1String("wpctl")) {

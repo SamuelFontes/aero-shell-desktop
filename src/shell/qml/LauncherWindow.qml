@@ -7,20 +7,23 @@ import QtQuick.Window
 Window {
     id: launcher
     property var targetScreen
-    property var panelWindow
+    property var panelWindow: null
     property var settingsWindow
     property string lockError: ""
 
     screen: targetScreen
     transientParent: panelWindow
-    x: targetScreen ? targetScreen.geometry.x + 10 : 10
+    x: targetScreen ? targetScreen.virtualX + 10 : 10
     y: targetScreen && panelWindow ? panelWindow.y - height - 6 : 166
-        width: 462
-    height: Math.min(560, targetScreen ? targetScreen.geometry.height - 80 : 560)
+    width: 462
+    height: Math.min(560, targetScreen ? targetScreen.height - 80 : 560)
     visible: false
     color: "transparent"
     flags: Qt.FramelessWindowHint | Qt.Popup
     title: "AeroShell Start"
+
+    onXChanged: shellBridge.setSurfacePosition(launcher, Qt.point(x, y))
+    onYChanged: shellBridge.setSurfacePosition(launcher, Qt.point(x, y))
 
     Component.onCompleted: {
         shellBridge.registerSurface(launcher, "popup")
@@ -275,6 +278,8 @@ Window {
 
     Dialog {
         id: powerDialog
+        implicitWidth: 340
+        width: Math.min(implicitWidth, launcher.width - 24)
         parent: Overlay.overlay
         anchors.centerIn: parent
         modal: true
@@ -327,6 +332,8 @@ Window {
 
     Dialog {
         id: powerConfirmation
+        implicitWidth: 340
+        width: Math.min(implicitWidth, launcher.width - 24)
         parent: Overlay.overlay
         anchors.centerIn: parent
         modal: true

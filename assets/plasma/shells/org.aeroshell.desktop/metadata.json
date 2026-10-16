@@ -1,5 +1,5 @@
 {
-  "KPackageStructure": "Plasma/LookAndFeel",
+  "KPackageStructure": "Plasma/Shell",
   "KPlugin": {
     "Authors": [
       {
@@ -11,7 +11,7 @@
       }
     ],
     "Category": "",
-    "Description": "AeroThemePlasma lock screen for the independent AeroShell Wayland desktop",
+    "Description": "Private AeroThemePlasma lock screen for AeroShell on KScreenLocker 6.7",
     "Icon": "user-desktop",
     "Id": "org.aeroshell.desktop",
     "License": "AGPLv3",

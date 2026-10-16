@@ -3,6 +3,7 @@
 
 #include <QAbstractListModel>
 #include <QDBusConnection>
+#include <QDBusContext>
 #include <QHash>
 #include <QSet>
 #include <QString>
@@ -13,7 +14,7 @@
 class QDBusServiceWatcher;
 class StatusNotifierWatcherAdaptor;
 
-class StatusNotifierModel final : public QAbstractListModel
+class StatusNotifierModel final : public QAbstractListModel, public QDBusContext
 {
     Q_OBJECT
     Q_PROPERTY(bool active READ active NOTIFY activeChanged)

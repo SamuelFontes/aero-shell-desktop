@@ -28,13 +28,16 @@ Window {
     }
 
     screen: targetScreen
-    x: targetScreen ? targetScreen.geometry.x : 0
-    y: targetScreen ? targetScreen.geometry.y + targetScreen.geometry.height - panelHeight : 672
-    width: targetScreen ? targetScreen.geometry.width : 1280
+    x: targetScreen ? targetScreen.virtualX : 0
+    y: targetScreen ? targetScreen.virtualY + targetScreen.height - panelHeight : 672
+    width: targetScreen ? targetScreen.width : 1280
     height: panelHeight
     color: "transparent"
     flags: Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
     title: "AeroShell Panel"
+
+    onXChanged: shellBridge.setSurfacePosition(panel, Qt.point(x, y))
+    onYChanged: shellBridge.setSurfacePosition(panel, Qt.point(x, y))
 
     Component.onCompleted: {
         shellBridge.registerSurface(panel, "panel")
@@ -113,18 +116,18 @@ Window {
             model: aeroWindowModel
             delegate: Button {
                 id: taskButton
-                required property string display
-                required property string appId
-                required property bool isActive
-                required property bool isMinimized
-                required property bool isMaximized
-                required property bool isCloseable
-                required property bool skipTaskbar
+                required property var model
+                readonly property string appId: model.AppId
+                readonly property bool isActive: model.IsActive
+                readonly property bool isMinimized: model.IsMinimized
+                readonly property bool isMaximized: model.IsMaximized
+                readonly property bool isCloseable: model.IsCloseable
+                readonly property bool skipTaskbar: model.SkipTaskbar
                 required property int index
                 visible: !skipTaskbar
                 width: visible ? Math.min(190, Math.max(92, implicitWidth)) : 0
                 height: 38
-                text: display
+                text: model.display
                 onClicked: {
                     if (isActive && !isMinimized)
                         aeroWindowModel.requestToggleMinimized(index)
@@ -137,6 +140,8 @@ Window {
                 }
                 Menu {
                     id: taskMenu
+                    objectName: "aeroshell-taskMenu"
+                    popupType: Popup.Window
                     MenuItem {
                         text: isMinimized ? "Restore" : "Minimize"
                         onTriggered: aeroWindowModel.requestToggleMinimized(index)
@@ -231,7 +236,9 @@ Window {
         }
 
         Popup {
+            popupType: Popup.Window
             id: networkPopup
+            objectName: "aeroshell-networkPopup"
             x: panel.width - width - 182
             y: -height - 8
             width: 310
@@ -426,7 +433,9 @@ Window {
         }
 
         Popup {
+            popupType: Popup.Window
             id: audioPopup
+            objectName: "aeroshell-audioPopup"
             x: panel.width - width - 48
             y: -height - 8
             width: 232
@@ -509,7 +518,9 @@ Window {
         }
 
         Popup {
+            popupType: Popup.Window
             id: batteryPopup
+            objectName: "aeroshell-batteryPopup"
             x: panel.width - width - 48
             y: -height - 8
             width: 220
@@ -591,7 +602,9 @@ Window {
         }
 
         Popup {
+            popupType: Popup.Window
             id: notificationPopup
+            objectName: "aeroshell-notificationPopup"
             x: panel.width - width - 12
             y: -height - 8
             width: 360
@@ -636,7 +649,7 @@ Window {
                     spacing: 6
                     model: notificationModel
                     delegate: Rectangle {
-                        required property uint notificationId
+                        required property double notificationId
                         required property string appName
                         required property string appIcon
                         required property string summary
@@ -665,6 +678,7 @@ Window {
                                 Text {
                                     Layout.fillWidth: true
                                     text: appName.length ? `${appName}: ${summary}` : summary
+                                    textFormat: Text.PlainText
                                     color: "#141312"
                                     font.bold: true
                                     elide: Text.ElideRight
@@ -712,7 +726,9 @@ Window {
         }
 
         Popup {
+            popupType: Popup.Window
             id: notificationToast
+            objectName: "aeroshell-notificationToast"
             x: panel.width - width - 12
             y: -height - panel.panelHeight - 10
             width: 350
@@ -746,6 +762,7 @@ Window {
                 Text {
                     Layout.fillWidth: true
                     text: panel.toastNotification.summary || ""
+                    textFormat: Text.PlainText
                     color: "#141312"
                     font.bold: true
                     elide: Text.ElideRight
@@ -867,7 +884,9 @@ Window {
         }
 
         Popup {
+            popupType: Popup.Window
             id: trayMenuPopup
+            objectName: "aeroshell-trayMenuPopup"
             x: panel.width - width - 8
             y: -height - 7
             width: 280
@@ -1059,7 +1078,9 @@ Window {
         }
 
         Popup {
+            popupType: Popup.Window
             id: calendarPopup
+            objectName: "aeroshell-calendarPopup"
             x: panel.width - width - 8
             y: -height - 8
             width: 270

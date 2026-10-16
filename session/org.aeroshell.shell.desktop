@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=AeroShell Shell
+Exec=/opt/aeroshell/bin/aeroshell-shell
+Icon=start-here
+NoDisplay=true
+X-KDE-Wayland-Interfaces=org_kde_plasma_window_management

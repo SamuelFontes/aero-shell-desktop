@@ -44,9 +44,9 @@ public:
         : QDBusAbstractAdaptor(parent)
         , m_model(parent)
     {
-        connect(m_model, &NotificationsModel::NotificationClosed,
+        connect(m_model, &NotificationsModel::notificationClosed,
                 this, &NotificationsAdaptor::NotificationClosed);
-        connect(m_model, &NotificationsModel::ActionInvoked,
+        connect(m_model, &NotificationsModel::actionInvoked,
                 this, &NotificationsAdaptor::ActionInvoked);
     }
 
@@ -161,6 +161,12 @@ uint NotificationsModel::notify(const QString &appName, uint replacesId, const Q
                       bodyDocument.toPlainText().left(8192), actions.mid(0, 20),
                       urgencyFromHints(hints), QDateTime::currentMSecsSinceEpoch()};
     if (replacing) {
+        if (row > 0) {
+            beginMoveRows({}, row, row, {}, 0);
+            m_notifications.move(row, 0);
+            endMoveRows();
+            row = 0;
+        }
         m_notifications[row] = item;
         Q_EMIT dataChanged(index(row), index(row));
         if (row == 0) {
@@ -183,8 +189,8 @@ uint NotificationsModel::notify(const QString &appName, uint replacesId, const Q
         timer->stop();
         timer->deleteLater();
     }
-    if (expireTimeout != -1) {
-        const int timeout = expireTimeout == 0 ? defaultExpiryMs : std::max(0, expireTimeout);
+    const int timeout = expireTimeout < 0 ? defaultExpiryMs : expireTimeout;
+    if (timeout > 0) {
         auto *timer = new QTimer(this);
         timer->setSingleShot(true);
         m_expiryTimers.insert(id, timer);
@@ -211,16 +217,24 @@ void NotificationsModel::closeNotification(uint id, uint reason)
     if (row == 0) {
         Q_EMIT latestNotificationChanged();
     }
-    Q_EMIT NotificationClosed(id, reason);
+    Q_EMIT notificationClosed(id, reason);
 }
 
 void NotificationsModel::invokeAction(uint id, const QString &actionKey)
 {
     const int row = rowForId(id);
-    if (row < 0 || !m_notifications.at(row).actions.contains(actionKey)) {
+    if (row < 0) {
         return;
     }
-    Q_EMIT ActionInvoked(id, actionKey);
+    const QStringList &actions = m_notifications.at(row).actions;
+    bool validAction = false;
+    for (qsizetype i = 0; i + 1 < actions.size(); i += 2) {
+        validAction |= actions.at(i) == actionKey;
+    }
+    if (!validAction) {
+        return;
+    }
+    Q_EMIT actionInvoked(id, actionKey);
     closeNotification(id, 2);
 }
 

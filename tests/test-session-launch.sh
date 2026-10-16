@@ -25,25 +25,28 @@ mkdir -p "$TEMP_ROOT/bin" "$TEMP_ROOT/runtime" "$TEMP_ROOT/prefix with spaces/li
     "$TEMP_ROOT/prefix with spaces/bin" "$TEMP_ROOT/prefix with spaces/share/aeroshell/defaults" \
     "$TEMP_ROOT/prefix with spaces/share/aeroshell" \
     "$TEMP_ROOT/prefix with spaces/share/aeroshell/aurorae/themes/Se7enAero" \
-    "$TEMP_ROOT/prefix with spaces/share/plasma/look-and-feel/org.aeroshell.desktop/contents/lockscreen" \
-    "$TEMP_ROOT/prefix with spaces/share/plasma/look-and-feel/org.aeroshell.desktop/contents/sounds" \
+    "$TEMP_ROOT/prefix with spaces/share/plasma/shells/org.aeroshell.desktop/contents/lockscreen" \
+    "$TEMP_ROOT/prefix with spaces/share/plasma/shells/org.aeroshell.desktop/contents/sounds" \
     "$TEMP_ROOT/home with spaces"
 cp "$ROOT/assets/defaults/kwinrc" "$TEMP_ROOT/prefix with spaces/share/aeroshell/defaults/kwinrc"
 cp "$ROOT/assets/defaults/kscreenlockerrc" "$TEMP_ROOT/prefix with spaces/share/aeroshell/defaults/kscreenlockerrc"
+cp "$ROOT/assets/defaults/kdeglobals" "$TEMP_ROOT/prefix with spaces/share/aeroshell/defaults/kdeglobals"
 cp "$ROOT/assets/qtquickcontrols2.conf" "$TEMP_ROOT/prefix with spaces/share/aeroshell/qtquickcontrols2.conf"
-cp "$ROOT/assets/plasma/look-and-feel/org.aeroshell.desktop/metadata.json" \
-    "$TEMP_ROOT/prefix with spaces/share/plasma/look-and-feel/org.aeroshell.desktop/metadata.json"
-cp "$ROOT/assets/plasma/look-and-feel/org.aeroshell.desktop/contents/lockscreen/LockScreen.qml" \
-    "$TEMP_ROOT/prefix with spaces/share/plasma/look-and-feel/org.aeroshell.desktop/contents/lockscreen/LockScreen.qml"
-cp "$ROOT/assets/plasma/look-and-feel/org.aeroshell.desktop/contents/lockscreen/LockScreenUi.qml" \
-    "$TEMP_ROOT/prefix with spaces/share/plasma/look-and-feel/org.aeroshell.desktop/contents/lockscreen/LockScreenUi.qml"
-cp "$ROOT/assets/plasma/look-and-feel/org.aeroshell.desktop/contents/sounds/lockSuccess.ogg" \
-    "$TEMP_ROOT/prefix with spaces/share/plasma/look-and-feel/org.aeroshell.desktop/contents/sounds/lockSuccess.ogg"
+cp "$ROOT/assets/plasma/shells/org.aeroshell.desktop/metadata.json" \
+    "$TEMP_ROOT/prefix with spaces/share/plasma/shells/org.aeroshell.desktop/metadata.json"
+cp "$ROOT/assets/plasma/shells/org.aeroshell.desktop/contents/lockscreen/LockScreen.qml" \
+    "$TEMP_ROOT/prefix with spaces/share/plasma/shells/org.aeroshell.desktop/contents/lockscreen/LockScreen.qml"
+cp "$ROOT/assets/plasma/shells/org.aeroshell.desktop/contents/lockscreen/LockScreenUi.qml" \
+    "$TEMP_ROOT/prefix with spaces/share/plasma/shells/org.aeroshell.desktop/contents/lockscreen/LockScreenUi.qml"
+cp "$ROOT/assets/plasma/shells/org.aeroshell.desktop/contents/sounds/lockSuccess.ogg" \
+    "$TEMP_ROOT/prefix with spaces/share/plasma/shells/org.aeroshell.desktop/contents/sounds/lockSuccess.ogg"
 touch "$TEMP_ROOT/prefix with spaces/share/aeroshell/aurorae/themes/Se7enAero/metadata.desktop" \
     "$TEMP_ROOT/prefix with spaces/share/aeroshell/aurorae/themes/Se7enAero/decoration.svg"
 chmod 700 "$TEMP_ROOT/runtime"
 cp "$ROOT/session/aeroshell-check-compatibility" \
     "$TEMP_ROOT/prefix with spaces/libexec/aeroshell-check-compatibility"
+cp "$ROOT/session/aeroshell-session-bus" "$TEMP_ROOT/prefix with spaces/libexec/aeroshell-session-bus"
+chmod +x "$TEMP_ROOT/prefix with spaces/libexec/aeroshell-session-bus"
 chmod +x "$TEMP_ROOT/prefix with spaces/libexec/aeroshell-check-compatibility"
 touch "$TEMP_ROOT/prefix with spaces/libexec/aeroshell-shell-session"
 chmod +x "$TEMP_ROOT/prefix with spaces/libexec/aeroshell-shell-session"
@@ -57,6 +60,18 @@ export DBUS_SESSION_BUS_ADDRESS="$AEROSHELL_TEST_PRIVATE_BUS_ADDRESS"
 exec "$@"
 FAKE_DBUS_RUN_SESSION
 chmod +x "$TEMP_ROOT/bin/dbus-run-session"
+
+cat > "$TEMP_ROOT/bin/dbus-update-activation-environment" <<'FAKE_ACTIVATION'
+#!/usr/bin/env bash
+[[ "$DBUS_SESSION_BUS_ADDRESS" == "$AEROSHELL_TEST_PRIVATE_BUS_ADDRESS" ]] || exit 94
+for arg in "$@"; do
+    [[ "$arg" != --* ]] || exit 95
+done
+printf '%s\n' "$@" > "$AEROSHELL_TEST_ACTIVATION_ARGS_FILE"
+printf '%s\n' "$XDG_CONFIG_HOME" "$WAYLAND_DISPLAY" "$QT_QPA_PLATFORM" > "$AEROSHELL_TEST_ACTIVATION_ENV_FILE"
+[[ "${AEROSHELL_TEST_ACTIVATION_FAIL:-0}" == 0 ]]
+FAKE_ACTIVATION
+chmod +x "$TEMP_ROOT/bin/dbus-update-activation-environment"
 
 cat > "$TEMP_ROOT/bin/kwin_wayland" <<'FAKE_KWIN'
 #!/usr/bin/env bash
@@ -76,6 +91,7 @@ printf '%s\n' \
     "$XDG_CURRENT_DESKTOP" "$XDG_SESSION_DESKTOP" "$XDG_SESSION_TYPE" "$DESKTOP_SESSION" \
     "$XDG_RUNTIME_DIR" "$DBUS_SESSION_BUS_ADDRESS" "$XDG_DATA_DIRS" "$GTK_THEME" "$FONTCONFIG_FILE" \
     "$QT_QUICK_CONTROLS_CONF" "$XCURSOR_THEME" "$XCURSOR_PATH" "$XCURSOR_SIZE" \
+    "$PLASMA_DEFAULT_SHELL" \
     > "$AEROSHELL_TEST_ENV_FILE"
 FAKE_KWIN
 chmod +x "$TEMP_ROOT/bin/kwin_wayland"
@@ -95,11 +111,15 @@ export AEROSHELL_TEST_ENV_FILE="$TEMP_ROOT/kwin-env"
 export AEROSHELL_TEST_DBUS_ARGS_FILE="$TEMP_ROOT/dbus-args"
 export AEROSHELL_TEST_PRIVATE_BUS_ADDRESS="unix:path=$TEMP_ROOT/private-session-bus"
 export AEROSHELL_TEST_KWIN_VERSION="6.7.4"
-unset XCURSOR_PATH AEROSHELL_CURSOR_SIZE
+unset XCURSOR_PATH AEROSHELL_CURSOR_SIZE WAYLAND_DISPLAY
 user_config_home="$XDG_CONFIG_HOME"
 user_data_home="$XDG_DATA_HOME"
 user_cache_home="$XDG_CACHE_HOME"
 user_state_home="$XDG_STATE_HOME"
+mkdir -p "$user_config_home"
+for name in kdeglobals kwinrc kscreenlockerrc plasma-org.kde.plasma.desktop-appletsrc; do
+    printf 'KDE sentinel: %s\n' "$name" > "$user_config_home/$name"
+done
 
 bash "$ROOT/session/aeroshell-session-wayland"
 
@@ -120,6 +140,7 @@ assert_file_line "$TEMP_ROOT/kwin-env" 14 "$AEROSHELL_PREFIX/share/aeroshell/qtq
 assert_file_line "$TEMP_ROOT/kwin-env" 15 "aero-drop"
 assert_file_line "$TEMP_ROOT/kwin-env" 16 "$AEROSHELL_PREFIX/share/aeroshell/cursors:/usr/share/icons"
 assert_file_line "$TEMP_ROOT/kwin-env" 17 "24"
+assert_file_line "$TEMP_ROOT/kwin-env" 18 "org.aeroshell.desktop"
 
 for profile_path in \
     "$XDG_CONFIG_HOME/aeroshell/kwin/config" \
@@ -132,10 +153,12 @@ rg -q 'library=org.kde.kwin.aurorae.v2' "$XDG_CONFIG_HOME/aeroshell/kwin/config/
     || fail "the first AeroShell login did not seed its private Aero window decoration"
 rg -q 'theme=__aurorae__svg__Se7enAero' "$XDG_CONFIG_HOME/aeroshell/kwin/config/kwinrc" \
     || fail "the private KWin defaults do not select the Se7en Aero decoration"
-rg -q 'LookAndFeel=org.aeroshell.desktop' "$XDG_CONFIG_HOME/aeroshell/kwin/config/kscreenlockerrc" \
-    || fail "the private lock-screen defaults do not select the AeroShell LookAndFeel"
 rg -q 'LockOnResume=true' "$XDG_CONFIG_HOME/aeroshell/kwin/config/kscreenlockerrc" \
     || fail "AeroShell does not lock after suspend/resume"
+rg -q '^Theme=Windows 7 Aero$' "$XDG_CONFIG_HOME/aeroshell/kwin/config/kdeglobals" \
+    || fail "the compositor/greeter profile did not select the Aero icon theme"
+rg -q '^font=Noto Sans,' "$XDG_CONFIG_HOME/aeroshell/kwin/config/kdeglobals" \
+    || fail "the compositor/greeter profile did not select Noto Sans"
 
 printf 'keep this AeroShell customization\n' > "$XDG_CONFIG_HOME/aeroshell/kwin/config/kwinrc"
 printf 'keep this lock-screen customization\n' > "$XDG_CONFIG_HOME/aeroshell/kwin/config/kscreenlockerrc"
@@ -156,8 +179,9 @@ assert_equal "--desktopfile" "${kwin_args[1]}" "KWin gets the AeroShell desktop 
 assert_equal "aeroshell" "${kwin_args[2]}" "KWin desktop identity argument"
 assert_equal "--exit-with-session" "${kwin_args[3]}" "KWin owns the shell lifetime"
 assert_equal "$TEMP_ROOT/prefix with spaces/libexec/aeroshell-shell-session" "${kwin_args[4]}" "session shell wrapper path"
-assert_equal "$TEMP_ROOT/bin/kwin_wayland" "${dbus_args[0]}" "private D-Bus launches the expected compositor"
-assert_equal "${kwin_args[*]}" "${dbus_args[*]:1}" "KWin runs inside the isolated D-Bus session"
+assert_equal "$AEROSHELL_PREFIX/libexec/aeroshell-session-bus" "${dbus_args[0]}" "private D-Bus marks its own address"
+assert_equal "$TEMP_ROOT/bin/kwin_wayland" "${dbus_args[1]}" "private D-Bus launches the expected compositor"
+assert_equal "${kwin_args[*]}" "${dbus_args[*]:2}" "KWin runs inside the isolated D-Bus session"
 
 cat > "$TEMP_ROOT/prefix with spaces/bin/aeroshell-shell" <<'FAKE_SHELL'
 #!/usr/bin/env bash
@@ -170,6 +194,10 @@ printf '%s\n' \
 FAKE_SHELL
 chmod +x "$TEMP_ROOT/prefix with spaces/bin/aeroshell-shell"
 export AEROSHELL_TEST_RESTORED_ENV_FILE="$TEMP_ROOT/restored-env"
+export AEROSHELL_TEST_ACTIVATION_ARGS_FILE="$TEMP_ROOT/activation-args"
+export AEROSHELL_TEST_ACTIVATION_ENV_FILE="$TEMP_ROOT/activation-env"
+export DBUS_SESSION_BUS_ADDRESS="$AEROSHELL_TEST_PRIVATE_BUS_ADDRESS"
+export AEROSHELL_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS"
 export AEROSHELL_USER_XDG_CONFIG_HOME="$user_config_home"
 export AEROSHELL_USER_XDG_DATA_HOME="$user_data_home"
 export AEROSHELL_USER_XDG_CACHE_HOME="$user_cache_home"
@@ -182,7 +210,7 @@ XDG_DATA_DIRS="$AEROSHELL_PREFIX/share:$AEROSHELL_PREFIX/share/aeroshell:$XDG_DA
 GTK_THEME="AeroShellAero" FONTCONFIG_FILE="$AEROSHELL_PREFIX/share/aeroshell/fontconfig/fonts.conf" \
 QT_QUICK_CONTROLS_CONF="$AEROSHELL_PREFIX/share/aeroshell/qtquickcontrols2.conf" \
 XCURSOR_THEME="aero-drop" XCURSOR_PATH="$AEROSHELL_PREFIX/share/aeroshell/cursors:/usr/share/icons" \
-XCURSOR_SIZE="24" \
+XCURSOR_SIZE="24" WAYLAND_DISPLAY="wayland-aeroshell-test" QT_QPA_PLATFORM="xcb" \
 XDG_CURRENT_DESKTOP="AeroShell" XDG_SESSION_DESKTOP="aeroshell" XDG_SESSION_TYPE="wayland" \
     bash "$ROOT/session/aeroshell-shell-session"
 
@@ -203,6 +231,32 @@ assert_file_line "$TEMP_ROOT/restored-env" 14 "aero-drop"
 assert_file_line "$TEMP_ROOT/restored-env" 15 "$AEROSHELL_PREFIX/share/aeroshell/cursors:/usr/share/icons"
 assert_file_line "$TEMP_ROOT/restored-env" 16 "24"
 [[ -d "$user_config_home/aeroshell" ]] || fail "shell wrapper did not create its private settings directory"
+assert_file_line "$TEMP_ROOT/activation-env" 1 "$user_config_home"
+assert_file_line "$TEMP_ROOT/activation-env" 2 "wayland-aeroshell-test"
+assert_file_line "$TEMP_ROOT/activation-env" 3 "wayland"
+rg -qx WAYLAND_DISPLAY "$TEMP_ROOT/activation-args" || fail "private activation did not receive KWin's new display"
+
+# Direct invocation must not update the active KDE bus or start another desktop.
+rm -f "$AEROSHELL_TEST_ARGS_FILE" "$AEROSHELL_TEST_ACTIVATION_ARGS_FILE" "$AEROSHELL_TEST_RESTORED_ENV_FILE"
+if WAYLAND_DISPLAY=wayland-kde bash "$ROOT/session/aeroshell-session-wayland" >"$TEMP_ROOT/nested-out" 2>&1; then
+    fail "launcher accepted invocation inside an active Wayland desktop"
+fi
+[[ ! -e "$AEROSHELL_TEST_ARGS_FILE" ]] || fail "nested launch started a compositor"
+if AEROSHELL_SESSION_BUS_ADDRESS= bash "$ROOT/session/aeroshell-shell-session" >"$TEMP_ROOT/shared-bus-out" 2>&1; then
+    fail "shell wrapper accepted a shared desktop bus"
+fi
+[[ ! -e "$AEROSHELL_TEST_ACTIVATION_ARGS_FILE" ]] || fail "wrapper modified an unmarked session bus"
+[[ ! -e "$AEROSHELL_TEST_RESTORED_ENV_FILE" ]] || fail "wrapper started on an unmarked session bus"
+if WAYLAND_DISPLAY=wayland-aeroshell-test AEROSHELL_TEST_ACTIVATION_FAIL=1 \
+    bash "$ROOT/session/aeroshell-shell-session" >"$TEMP_ROOT/activation-fail-out" 2>&1; then
+    fail "shell started after private activation initialization failed"
+fi
+rg -q 'could not initialize private D-Bus service activation' "$TEMP_ROOT/activation-fail-out" \
+    || fail "activation initialization failure did not report its cause"
+[[ ! -e "$AEROSHELL_TEST_RESTORED_ENV_FILE" ]] || fail "shell started despite failed activation initialization"
+for name in kdeglobals kwinrc kscreenlockerrc plasma-org.kde.plasma.desktop-appletsrc; do
+    assert_equal "KDE sentinel: $name" "$(cat "$user_config_home/$name")" "KDE settings remain unchanged"
+done
 
 # Refuse a symlinked settings root before the shell can ask QSettings to write it.
 mkdir -p "$TEMP_ROOT/settings-link-parent" "$TEMP_ROOT/settings-link-sentinel"

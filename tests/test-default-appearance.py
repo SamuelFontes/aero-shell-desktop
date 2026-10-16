@@ -32,7 +32,7 @@ cursor_theme = ROOT / "assets/cursors/aero-drop/index.theme"
 aurorae_theme = ROOT / "assets/aurorae/themes/Se7enAero"
 kwin_defaults = ROOT / "assets/defaults/kwinrc"
 lock_defaults = ROOT / "assets/defaults/kscreenlockerrc"
-lock_theme = ROOT / "assets/plasma/look-and-feel/org.aeroshell.desktop"
+lock_theme = ROOT / "assets/plasma/shells/org.aeroshell.desktop"
 gtk_theme = ROOT / "assets/themes/AeroShellAero/gtk-3.0/gtk.css"
 font_config = ROOT / "assets/fontconfig/fonts.conf"
 start_orb = ROOT / "assets/widgets/aerothemeplasma-start-orb.png"
@@ -60,7 +60,7 @@ require("theme=__aurorae__svg__Se7enAero" in kwin_defaults.read_text(),
         "the first-login KWin profile does not select the Aero window decoration")
 require("blurEnabled=true" in kwin_defaults.read_text() and "glideEnabled=true" in kwin_defaults.read_text(),
         "the first-login KWin profile does not enable Aero glass blur and window animations")
-require("LookAndFeel=org.aeroshell.desktop" in lock_defaults.read_text()
+require('"KPackageStructure": "Plasma/Shell"' in (lock_theme / "metadata.json").read_text()
         and "LockOnResume=true" in lock_defaults.read_text()
         and "Autolock=true" in lock_defaults.read_text(),
         "the AeroShell lock-screen defaults must use the Aero look, lock after idle, and lock on resume")
@@ -119,12 +119,12 @@ require('export XCURSOR_THEME="aero-drop"' in session_launcher
         "the Wayland session does not select its bundled Aero cursor theme and path")
 require('install -m 600 -- "$default_kwinrc" "$kwinrc_path"' in session_launcher,
         "the Wayland session does not seed the private Aero decoration config on first login")
-require('dbus-run-session' in session_launcher and ' "$dbus_run_session" -- "$kwin"' in session_launcher,
+require('dbus-run-session' in session_launcher and ' "$dbus_run_session" -- "$bus_wrapper" "$kwin"' in session_launcher,
         "AeroShell and KDE do not get independent session buses")
 require("default_screenlockerrc" in session_launcher and '"$screenlockerrc_path"' in session_launcher,
         "the Wayland session does not seed the private Aero lock-screen defaults")
 require("default lock-screen package is incomplete" in session_launcher
-        and '"$look_and_feel_dir/contents/lockscreen/LockScreenUi.qml"' in session_launcher,
+        and '"$lock_shell_dir/contents/lockscreen/LockScreenUi.qml"' in session_launcher,
         "the Wayland session does not reject an incomplete Aero lock-screen package")
 require("Noto Sans" in font_config.read_text(), "the session fontconfig does not prioritize Noto Sans")
 require('export XCURSOR_THEME="aero-drop"' in session_launcher,

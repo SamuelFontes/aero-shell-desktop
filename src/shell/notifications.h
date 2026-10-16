@@ -57,8 +57,8 @@ Q_SIGNALS:
     void latestNotificationChanged();
     void statusChanged();
     void notificationAdded(uint id);
-    void NotificationClosed(uint id, uint reason);
-    void ActionInvoked(uint id, const QString &actionKey);
+    void notificationClosed(uint id, uint reason);
+    void actionInvoked(uint id, const QString &actionKey);
 
 private Q_SLOTS:
     void onPlasmaOwnerChanged(const QString &name, const QString &oldOwner, const QString &newOwner);

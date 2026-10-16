@@ -7,7 +7,6 @@
 #include <QDBusArgument>
 #include <QDBusAbstractAdaptor>
 #include <QDBusConnectionInterface>
-#include <QDBusContext>
 #include <QDBusInterface>
 #include <QDBusMessage>
 #include <QDBusObjectPath>
@@ -85,7 +84,7 @@ QString iconPixmapDataUrl(const QVariant &value)
 }
 }
 
-class StatusNotifierWatcherAdaptor final : public QDBusAbstractAdaptor, protected QDBusContext
+class StatusNotifierWatcherAdaptor final : public QDBusAbstractAdaptor
 {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.kde.StatusNotifierWatcher")
@@ -130,7 +129,10 @@ public Q_SLOTS:
         QString path = QStringLiteral("/StatusNotifierItem");
         const qsizetype slash = serviceOrPath.indexOf(QLatin1Char('/'));
         if (serviceOrPath.startsWith(QLatin1Char('/'))) {
-            service = message().service();
+            if (!m_model->calledFromDBus()) {
+                return;
+            }
+            service = m_model->message().service();
             path = serviceOrPath;
         } else if (slash >= 0) {
             service = serviceOrPath.left(slash);

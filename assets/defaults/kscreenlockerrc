@@ -8,7 +8,6 @@ RequirePassword=true
 Timeout=5
 
 [Greeter]
-LookAndFeel=org.aeroshell.desktop
 WallpaperPlugin=org.kde.image
 
 [Greeter][Wallpaper][org.kde.image][General]

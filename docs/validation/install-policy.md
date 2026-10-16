@@ -9,8 +9,8 @@
 - `python scripts/audit-install-manifests.py --help` — command-line entry point loads.
 - `git diff --check` — passed.
 - The earlier `/tmp` stages passed for 8,326 and then 8,442 entries as lock-screen and Qt Quick Controls assets were added.
-- The current stage at `build/stage-final-20261016a` passed `python scripts/audit-install-manifests.py --stage-root build/stage-final-20261016a --check-target /` for 8,474 entries, including the Windows 7 sound theme, private AeroThemePlasma-derived lock-screen package, font/icon settings, Qt Quick Controls defaults, and current launcher. No staged file collides with a package-owned path on the host.
-- The local unpublished Manjaro package at `build/local-package/aeroshell-desktop-0.1.0.r1.g8a440d9-1-x86_64.pkg.tar.zst` was built and recognized by `pacman -Qp`. Its archive was checked for SDDM, global Plasma/KWin configuration, and home-profile destinations. It is a workspace snapshot, not a published or reproducible clean checkout.
+- The reviewed stage at `build/review-stage-final` passed `python scripts/audit-install-manifests.py --stage-root build/review-stage-final --check-target /` for 8,478 entries, including the hidden shell application permission metadata, private-bus wrapper, compositor/greeter font/icon defaults, and KScreenLocker 6.7 `Plasma/Shell` package. No staged file collides with a package-owned path on the host. See [the preflight review](preflight-review.md) for corrections to the earlier implementation.
+- The local unpublished Manjaro package at `build/local-package/aeroshell-desktop-0.1.0.r5.g55050aa.review1-1-x86_64.pkg.tar.zst` was built and recognized by `pacman -Qp`. Its archive was checked for SDDM, global Plasma/KWin configuration, and home-profile destinations. It is a workspace snapshot, not a published or reproducible clean checkout.
 - Read-only pacman ownership check for `/usr/bin/pacman` returned owner `pacman`. The checker reported `/usr/bin/pacman: already owned by package 'pacman'` when given that staged destination.
 
 ## Scope limits

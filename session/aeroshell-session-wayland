@@ -9,6 +9,7 @@ die() {
 
 [[ -n "${HOME:-}" && "$HOME" == /* ]] || die 'HOME must be an absolute path.'
 [[ -n "${XDG_RUNTIME_DIR:-}" && -d "$XDG_RUNTIME_DIR" ]] || die 'XDG_RUNTIME_DIR is unavailable; start AeroShell from a normal graphical login.'
+[[ -z "${WAYLAND_DISPLAY:-}" ]] || die 'A Wayland desktop is already active in this environment. Log out and select AeroShell in the display-manager session menu.'
 
 xdg_base() {
     local variable="$1" fallback="$2" value="${!1:-}"
@@ -60,22 +61,25 @@ install_prefix="${AEROSHELL_PREFIX:-/opt/aeroshell}"
 [[ "$install_prefix" == /* ]] || die 'AEROSHELL_PREFIX must be absolute.'
 kwinrc_path="$profile_config/kwin/config/kwinrc"
 screenlockerrc_path="$profile_config/kwin/config/kscreenlockerrc"
+private_kdeglobals_path="$profile_config/kwin/config/kdeglobals"
 default_kwinrc="$install_prefix/share/aeroshell/defaults/kwinrc"
 default_screenlockerrc="$install_prefix/share/aeroshell/defaults/kscreenlockerrc"
+default_kdeglobals="$install_prefix/share/aeroshell/defaults/kdeglobals"
 qt_quick_controls_config="$install_prefix/share/aeroshell/qtquickcontrols2.conf"
 aero_decoration_dir="$install_prefix/share/aeroshell/aurorae/themes/Se7enAero"
-look_and_feel_dir="$install_prefix/share/plasma/look-and-feel/org.aeroshell.desktop"
+lock_shell_dir="$install_prefix/share/plasma/shells/org.aeroshell.desktop"
 [[ -f "$default_kwinrc" ]] || die "AeroShell's default KWin appearance is missing: $default_kwinrc"
 [[ -f "$default_screenlockerrc" ]] || die "AeroShell's default lock-screen appearance is missing: $default_screenlockerrc"
+[[ -f "$default_kdeglobals" ]] || die "AeroShell's private font/icon defaults are missing: $default_kdeglobals"
 [[ -f "$qt_quick_controls_config" ]] || die "AeroShell's default Qt Quick appearance is missing: $qt_quick_controls_config"
 [[ -f "$aero_decoration_dir/metadata.desktop" && -f "$aero_decoration_dir/decoration.svg" ]] \
     || die "AeroShell's Se7en Aero window decoration is incomplete: $aero_decoration_dir"
-[[ -f "$look_and_feel_dir/metadata.json" \
-    && -f "$look_and_feel_dir/contents/lockscreen/LockScreen.qml" \
-    && -f "$look_and_feel_dir/contents/lockscreen/LockScreenUi.qml" \
-    && -f "$look_and_feel_dir/contents/sounds/lockSuccess.ogg" ]] \
-    || die "AeroShell's default lock-screen package is incomplete: $look_and_feel_dir"
-for config_path in "$kwinrc_path" "$screenlockerrc_path"; do
+[[ -f "$lock_shell_dir/metadata.json" \
+    && -f "$lock_shell_dir/contents/lockscreen/LockScreen.qml" \
+    && -f "$lock_shell_dir/contents/lockscreen/LockScreenUi.qml" \
+    && -f "$lock_shell_dir/contents/sounds/lockSuccess.ogg" ]] \
+    || die "AeroShell's default lock-screen package is incomplete: $lock_shell_dir"
+for config_path in "$kwinrc_path" "$screenlockerrc_path" "$private_kdeglobals_path"; do
     [[ ! -L "$config_path" ]] || die "Refusing to use a symlinked AeroShell config: $config_path"
     [[ ! -e "$config_path" || -f "$config_path" ]] || die "AeroShell config path is not a regular file: $config_path"
     if [[ -e "$config_path" ]]; then
@@ -85,6 +89,10 @@ for config_path in "$kwinrc_path" "$screenlockerrc_path"; do
 done
 shell_wrapper="$install_prefix/libexec/aeroshell-shell-session"
 [[ -x "$shell_wrapper" ]] || die "AeroShell shell launcher is missing: $shell_wrapper"
+bus_wrapper="$install_prefix/libexec/aeroshell-session-bus"
+[[ -x "$bus_wrapper" ]] || die "AeroShell private-bus launcher is missing: $bus_wrapper"
+command -v dbus-update-activation-environment >/dev/null \
+    || die 'dbus-update-activation-environment is required for private session service activation.'
 compatibility_checker="$install_prefix/libexec/aeroshell-check-compatibility"
 [[ -x "$compatibility_checker" ]] || die "AeroShell compatibility checker is missing: $compatibility_checker"
 "$compatibility_checker" "$kwin"
@@ -99,6 +107,10 @@ fi
 if [[ ! -e "$screenlockerrc_path" ]]; then
     install -m 600 -- "$default_screenlockerrc" "$screenlockerrc_path" \
         || die "Cannot install AeroShell's private lock-screen defaults: $screenlockerrc_path"
+fi
+if [[ ! -e "$private_kdeglobals_path" ]]; then
+    install -m 600 -- "$default_kdeglobals" "$private_kdeglobals_path" \
+        || die "Cannot install AeroShell's private font/icon defaults: $private_kdeglobals_path"
 fi
 
 aero_data_dir="$install_prefix/share/aeroshell"
@@ -129,6 +141,9 @@ export XDG_CURRENT_DESKTOP="AeroShell"
 export XDG_SESSION_DESKTOP="aeroshell"
 export XDG_SESSION_TYPE="wayland"
 export DESKTOP_SESSION="aeroshell"
+# KScreenLocker 6.7 selects its lock-screen package from Plasma/Shell, using
+# this default inside KWin's private profile. No plasmashell process is run.
+export PLASMA_DEFAULT_SHELL="org.aeroshell.desktop"
 export XDG_DATA_DIRS="$current_data_dirs"
 export GTK_THEME="AeroShellAero"
 current_gtk_modules="${GTK_MODULES:-}"
@@ -147,4 +162,4 @@ export XCURSOR_SIZE="${AEROSHELL_CURSOR_SIZE:-24}"
 # independent KWin, notification, StatusNotifier, and portal-related names.
 # The system bus and user files remain shared; the shell wrapper restores the
 # user's original XDG roots before launching normal applications.
-exec "$dbus_run_session" -- "$kwin" --xwayland --desktopfile aeroshell --exit-with-session "$shell_wrapper"
+exec "$dbus_run_session" -- "$bus_wrapper" "$kwin" --xwayland --desktopfile aeroshell --exit-with-session "$shell_wrapper"

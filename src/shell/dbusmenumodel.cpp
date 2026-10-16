@@ -398,7 +398,7 @@ void DBusMenuModel::sendEvent(int itemId)
     QDBusMessage event = QDBusMessage::createMethodCall(m_service, m_path,
                                                          QString::fromLatin1(menuInterface),
                                                          QStringLiteral("Event"));
-    event << itemId << QStringLiteral("clicked") << QVariant::fromValue(0)
+    event << itemId << QStringLiteral("clicked") << QVariant::fromValue(QDBusVariant(0))
           << static_cast<uint>(QDateTime::currentMSecsSinceEpoch() & 0xffffffffU);
     m_bus.asyncCall(event, 1800);
 }

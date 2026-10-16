@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+[[ -n "${AEROSHELL_SESSION_BUS_ADDRESS:-}" \
+    && "$AEROSHELL_SESSION_BUS_ADDRESS" == "${DBUS_SESSION_BUS_ADDRESS:-}" ]] || {
+    printf 'AeroShell: launch the complete AeroShell session from the display manager.\n' >&2
+    exit 1
+}
+
 restore_xdg_root() {
     local name="$1" value="$2"
     if [[ -n "$value" ]]; then
@@ -68,6 +74,25 @@ install_prefix="${AEROSHELL_PREFIX:-/opt/aeroshell}"
 shell_executable="$install_prefix/bin/aeroshell-shell"
 [[ -x "$shell_executable" ]] || {
     printf 'AeroShell: shell executable is missing: %s\n' "$shell_executable" >&2
+    exit 1
+}
+
+# KWin creates WAYLAND_DISPLAY, DISPLAY, and XAUTHORITY after the private bus
+# starts. Publish the final child environment to that bus only; never import
+# anything into the shared systemd user manager.
+export QT_QPA_PLATFORM=wayland
+activation_variables=()
+for variable in DBUS_SESSION_BUS_ADDRESS WAYLAND_DISPLAY DISPLAY XAUTHORITY \
+    XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE DESKTOP_SESSION PLASMA_DEFAULT_SHELL \
+    XDG_CONFIG_HOME XDG_DATA_HOME XDG_CACHE_HOME XDG_STATE_HOME XDG_DATA_DIRS \
+    GTK_THEME GTK_MODULES FONTCONFIG_FILE QT_QUICK_CONTROLS_CONF QT_QPA_PLATFORM \
+    XCURSOR_THEME XCURSOR_PATH XCURSOR_SIZE PATH; do
+    if [[ -v "$variable" ]]; then
+        activation_variables+=("$variable")
+    fi
+done
+dbus-update-activation-environment "${activation_variables[@]}" || {
+    printf 'AeroShell: could not initialize private D-Bus service activation.\n' >&2
     exit 1
 }
 exec "$shell_executable" "$@"

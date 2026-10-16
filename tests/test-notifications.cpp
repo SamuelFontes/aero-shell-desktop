@@ -54,14 +54,19 @@ int main(int argc, char **argv)
 
     bool actionInvoked = false;
     bool closedByAction = false;
-    QObject::connect(&notifications, &NotificationsModel::ActionInvoked,
+    QObject::connect(&notifications, &NotificationsModel::actionInvoked,
                      [&actionInvoked](uint actionId, const QString &key) {
                          actionInvoked = actionId != 0 && key == QStringLiteral("open");
                      });
-    QObject::connect(&notifications, &NotificationsModel::NotificationClosed,
+    QObject::connect(&notifications, &NotificationsModel::notificationClosed,
                      [&closedByAction](uint closedId, uint reason) {
                          closedByAction = closedId != 0 && reason == 2;
                      });
+    notifications.invokeAction(id, QStringLiteral("Open"));
+    if (actionInvoked || notifications.count() != 1) {
+        std::fputs("Notification action labels were accepted as action keys.\n", stderr);
+        return 4;
+    }
     notifications.invokeAction(id, QStringLiteral("open"));
     if (!actionInvoked || !closedByAction || notifications.count() != 0) {
         std::fputs("Notification action activation or dismissal failed.\n", stderr);
@@ -69,7 +74,7 @@ int main(int argc, char **argv)
     }
 
     bool expired = false;
-    QObject::connect(&notifications, &NotificationsModel::NotificationClosed,
+    QObject::connect(&notifications, &NotificationsModel::notificationClosed,
                      [&expired](uint, uint reason) { expired = reason == 1; });
     notifications.notify(QStringLiteral("Timer"), 0, {}, QStringLiteral("Short-lived"), {}, {}, {}, 20);
     if (!waitUntil([&notifications] { return notifications.count() == 0; }) || !expired) {
@@ -77,6 +82,24 @@ int main(int argc, char **argv)
         return 5;
     }
 
-    std::puts("PASS: safe notification text, replacement, actions, dismissal, and expiry without claiming D-Bus");
+    const uint permanent = notifications.notify(QStringLiteral("Persistent"), 0, {}, QStringLiteral("Keep"), {}, {}, {}, 0);
+    notifications.notify(QStringLiteral("Newer"), 0, {}, QStringLiteral("Newest"), {}, {}, {}, 0);
+    notifications.notify(QStringLiteral("Persistent"), permanent, {}, QStringLiteral("Updated oldest"), {}, {}, {}, 0);
+    if (notifications.latestNotification().value(QStringLiteral("notificationId")).toUInt() != permanent) {
+        std::fputs("An updated older notification did not become the displayed latest notification.\n", stderr);
+        return 6;
+    }
+    const uint automatic = notifications.notify(QStringLiteral("Default"), 0, {}, QStringLiteral("Expire"), {}, {}, {}, -1);
+    if (!waitUntil([&notifications, automatic] {
+        for (int row = 0; row < notifications.count(); ++row) {
+            if (notifications.data(notifications.index(row), NotificationsModel::IdRole).toUInt() == automatic)
+                return false;
+        }
+        return true;
+    }, 7000) || notifications.count() != 2) {
+        std::fputs("Default expiry (-1) or persistent lifetime (0) does not follow the notification protocol.\n", stderr);
+        return 7;
+    }
+    std::puts("PASS: notification text, replacement ordering, action keys, dismissal, and protocol expiry without claiming D-Bus");
     return 0;
 }

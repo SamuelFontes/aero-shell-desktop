@@ -144,13 +144,6 @@ Item {
         key: Qt.Key_CapsLock
     }
 
-    Loader {
-        id: changeSessionComponent
-        active: false
-        source: "ChangeSession.qml"
-        visible: false
-    }
-
     WallpaperFader {
         anchors.fill: parent
         source: wallpaper

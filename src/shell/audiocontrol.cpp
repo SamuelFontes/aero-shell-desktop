@@ -2,6 +2,7 @@
 #include "audiocontrol.h"
 
 #include <QRegularExpression>
+#include <QProcessEnvironment>
 #include <QStandardPaths>
 
 AudioControl::AudioControl(QObject *parent)
@@ -75,6 +76,9 @@ void AudioControl::toggleMute()
 void AudioControl::startQuery(RefreshStep step)
 {
     auto *process = new QProcess(this);
+    auto environment = QProcessEnvironment::systemEnvironment();
+    environment.insert(QStringLiteral("LC_ALL"), QStringLiteral("C"));
+    process->setProcessEnvironment(environment);
     m_queryProcess = process;
 
     connect(process, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,

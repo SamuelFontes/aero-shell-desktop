@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 import QtQuick
 
-QtObject {
+Item {
     id: shell
 
     property var windows: []
@@ -146,7 +146,7 @@ QtObject {
 
     Connections {
         target: screenEvents
-        function onScreensChanged() { shell.reconcileScreens() }
+        function onScreensChanged() { Qt.callLater(function() { shell.reconcileScreens() }) }
     }
 
     Connections {

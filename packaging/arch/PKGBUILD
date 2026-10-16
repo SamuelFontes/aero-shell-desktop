@@ -10,10 +10,13 @@ depends=(
   'kwin>=6.7.4'
   'kwin<6.7.5'
   'dbus'
-  'kscreenlocker'
+  'kscreenlocker>=6.7.4'
+  'kscreenlocker<6.7.5'
   'plasma-workspace'
   'plasma5support'
   'qt6-base>=6.8'
+  'qt6-wayland'
+  'xorg-xwayland'
   'qt6-declarative>=6.8'
   'qt6-svg'
   'qt6-5compat'
@@ -21,9 +24,11 @@ depends=(
   'kio'
   'kservice'
   'kwayland>=6.7.4'
+  'kwayland<6.7.5'
   'polkit-qt6'
   'networkmanager'
   'libcanberra'
+  'libpulse'
   'noto-fonts'
   'adwaita-icon-theme'
   'xdg-desktop-portal'
@@ -33,7 +38,6 @@ depends=(
 makedepends=('cmake' 'ninja' 'git' 'python' 'desktop-file-utils')
 optdepends=(
   'wireplumber: Volume controls through wpctl'
-  'pulseaudio: Volume controls through pactl'
 )
 provides=('aeroshell-desktop')
 conflicts=('aeroshell-desktop')
@@ -57,8 +61,9 @@ check() {
   cd "${srcdir}/${pkgname}"
   qmllint -I build/qmltypes -I /usr/lib/qt6/qml src/shell/qml/*.qml
   qmllint -I build/qmltypes -I /usr/lib/qt6/qml \
-    assets/plasma/look-and-feel/org.aeroshell.desktop/contents/lockscreen/*.qml
+    assets/plasma/shells/org.aeroshell.desktop/contents/lockscreen/*.qml
   desktop-file-validate session/aeroshell.desktop
+  desktop-file-validate session/org.aeroshell.shell.desktop
   ctest --test-dir build --output-on-failure
   python tests/test-install-policy.py
   python tests/test-source-lock.py

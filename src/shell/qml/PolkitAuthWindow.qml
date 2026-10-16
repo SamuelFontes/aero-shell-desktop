@@ -17,10 +17,13 @@ Window {
     title: "AeroShell Authentication"
     width: 500
     height: sessionStarted ? 330 : 290
-    x: targetScreen ? targetScreen.geometry.x + Math.round((targetScreen.geometry.width - width) / 2) : 100
-    y: targetScreen ? targetScreen.geometry.y + Math.round((targetScreen.geometry.height - height) / 2) : 100
+    x: targetScreen ? targetScreen.virtualX + Math.round((targetScreen.width - width) / 2) : 100
+    y: targetScreen ? targetScreen.virtualY + Math.round((targetScreen.height - height) / 2) : 100
     color: "transparent"
     visible: polkitAgentModel.authenticationActive
+
+    onXChanged: shellBridge.setSurfacePosition(authWindow, Qt.point(x, y))
+    onYChanged: shellBridge.setSurfacePosition(authWindow, Qt.point(x, y))
 
     Component.onCompleted: {
         shellBridge.registerSurface(authWindow, "popup")

@@ -97,6 +97,8 @@ install(DIRECTORY assets/plasma/ DESTINATION ${CMAKE_INSTALL_DATADIR}/plasma)
 install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/aeroshell/LICENSES RENAME MIT.txt)
 install(PROGRAMS session/aeroshell-shell-session DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
 install(PROGRAMS session/aeroshell-check-compatibility DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
+install(PROGRAMS session/aeroshell-session-bus DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
+install(FILES session/org.aeroshell.shell.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 install(PROGRAMS session/aeroshell-session-wayland DESTINATION /usr/bin)
 install(FILES session/aeroshell.desktop DESTINATION /usr/share/wayland-sessions)
 install(FILES packaging/aeroshell-portals.conf DESTINATION /usr/share/xdg-desktop-portal)
@@ -164,6 +166,13 @@ if(BUILD_TESTING)
     set_tests_properties(shell-settings PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
     add_test(NAME kwin-compatibility COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/test-compatibility.sh)
+    add_executable(test-qml-startup tests/test-qml-startup.cpp
+        src/shell/themeiconprovider.cpp src/shell/themeiconprovider.h
+        src/shell/notifications.cpp src/shell/notifications.h)
+    target_link_libraries(test-qml-startup PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::DBus Plasma::KWaylandClient KF6::Service)
+    target_compile_definitions(test-qml-startup PRIVATE AEROSHELL_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    add_test(NAME qml-startup COMMAND test-qml-startup)
+    set_tests_properties(qml-startup PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software")
     add_test(NAME session-launch COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/test-session-launch.sh)
     add_test(NAME default-appearance
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test-default-appearance.py)

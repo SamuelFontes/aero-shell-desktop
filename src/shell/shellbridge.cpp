@@ -178,6 +178,7 @@ void ShellBridge::attachSurface(QWindow *window)
         shellSurface->setRole(PlasmaShellSurface::Role::Normal);
     }
     shellSurface->setSkipTaskbar(true);
+    shellSurface->setSkipSwitcher(true);
     if (m_windowPositions.contains(window)) {
         shellSurface->setPosition(m_windowPositions.value(window));
     }

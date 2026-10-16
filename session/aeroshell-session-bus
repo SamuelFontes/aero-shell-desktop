@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# This trampoline runs inside dbus-run-session, before KWin creates its sockets.
+# The shell wrapper uses the marker to avoid changing the active KDE bus when
+# someone accidentally invokes it from a terminal in another desktop.
+[[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" && $# -gt 0 ]] || exit 1
+export AEROSHELL_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS"
+exec "$@"

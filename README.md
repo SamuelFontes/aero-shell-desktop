@@ -8,6 +8,8 @@ AeroShell must keep its desktop settings, processes, and services separate from 
 
 ## Development status
 
+The latest [preflight review](docs/validation/preflight-review.md) records the startup/integration fixes, eleven passing CTests, offscreen desktop/popover rendering, automatic Aero lock-screen package selection on this host, and the rebuilt local package. A real Wayland login and authentication test remain necessary.
+
 Task progress and evidence are tracked in [docs/tasks.md](docs/tasks.md). The required first-login composition and active defaults are in [docs/default-appearance.md](docs/default-appearance.md). Upstream source pins and install behavior remain tracked independently from asset-rights verification.
 
 The staged-file policy checker is in `scripts/audit-install-manifests.py`; source metadata validation is in `scripts/validate-sources-lock.py`. The session launcher currently permits KWin 6.7.4 and checks required launch options before creating an AeroShell profile. This preflight is not proof that a real AeroShell session works.

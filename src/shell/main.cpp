@@ -61,10 +61,15 @@ QColor schemeColor(const QSettings &scheme, const QString &key, const QColor &fa
 
 int main(int argc, char *argv[])
 {
+    const QByteArray privateBus = qgetenv("AEROSHELL_SESSION_BUS_ADDRESS");
+    if (privateBus.isEmpty() || privateBus != qgetenv("DBUS_SESSION_BUS_ADDRESS")) {
+        qCritical("Start AeroShell through its display-manager session entry so it has its own session bus.");
+        return 2;
+    }
     QGuiApplication::setApplicationName(QStringLiteral("AeroShell"));
     QGuiApplication::setApplicationDisplayName(QStringLiteral("AeroShell"));
     QGuiApplication::setOrganizationName(QStringLiteral("AeroShell"));
-    QGuiApplication::setDesktopFileName(QStringLiteral("aeroshell"));
+    QGuiApplication::setDesktopFileName(QStringLiteral("org.aeroshell.shell"));
     QQuickStyle::setStyle(QStringLiteral("Basic"));
 
     QGuiApplication app(argc, argv);
@@ -205,11 +210,15 @@ int main(int argc, char *argv[])
         qCritical().noquote() << message;
         QCoreApplication::exit(4);
     });
-    QObject::connect(&applications, &ApplicationModel::launchFailed, &app, [](const QString &name, const QString &message) {
+    QObject::connect(&applications, &ApplicationModel::launchFailed, &app, [&notifications](const QString &name, const QString &message) {
         qWarning().noquote() << name << message;
+        notifications.notify(QStringLiteral("AeroShell"), 0, QStringLiteral("dialog-error"),
+            QStringLiteral("Could not open %1").arg(name), message, {}, {{QStringLiteral("urgency"), 2U}}, 0);
     });
-    QObject::connect(&desktopItems, &DesktopItemModel::openFailed, &app, [](const QString &name, const QString &message) {
+    QObject::connect(&desktopItems, &DesktopItemModel::openFailed, &app, [&notifications](const QString &name, const QString &message) {
         qWarning().noquote() << name << message;
+        notifications.notify(QStringLiteral("AeroShell"), 0, QStringLiteral("dialog-error"),
+            QStringLiteral("Could not open %1").arg(name), message, {}, {{QStringLiteral("urgency"), 2U}}, 0);
     });
 
     engine.loadFromModule(QStringLiteral("AeroShell.Shell"), QStringLiteral("ShellRoot"));

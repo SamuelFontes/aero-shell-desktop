@@ -39,6 +39,14 @@ int main(int argc, char **argv)
 
     ThemeIconProvider iconProvider;
     QSize iconSize;
+    for (const QString &name : {QStringLiteral("start-here"), QStringLiteral("network-wireless"), QStringLiteral("battery-full")}) {
+        const QImage expected = QIcon::fromTheme(name).pixmap(QSize(32, 32)).toImage();
+        const QImage actual = iconProvider.requestPixmap(name + QStringLiteral("?v=42"), &iconSize, QSize(32, 32)).toImage();
+        if (actual != expected) {
+            std::fprintf(stderr, "Cache-busting query changed the theme icon: %s\n", qPrintable(name));
+            return 3;
+        }
+    }
     if (iconProvider.requestPixmap(QStringLiteral("aero-test-icon-without-a-theme-entry"), &iconSize, QSize(32, 32)).isNull()) {
         std::fputs("Unknown application icons do not fall back to the Aero generic file icon.\n", stderr);
         return 3;

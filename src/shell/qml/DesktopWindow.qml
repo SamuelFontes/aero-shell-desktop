@@ -9,17 +9,21 @@ Window {
     property url selectedWallpaperUrl
 
     screen: targetScreen
-    x: targetScreen ? targetScreen.geometry.x : 0
-    y: targetScreen ? targetScreen.geometry.y : 0
-    width: targetScreen ? targetScreen.geometry.width : 1280
-    height: targetScreen ? targetScreen.geometry.height : 720
-    visibility: Window.FullScreen
+    x: targetScreen ? targetScreen.virtualX : 0
+    y: targetScreen ? targetScreen.virtualY : 0
+    width: targetScreen ? targetScreen.width : 1280
+    height: targetScreen ? targetScreen.height : 720
+    visible: false
     color: "#22456d"
     flags: Qt.FramelessWindowHint | Qt.WindowDoesNotAcceptFocus
     title: "AeroShell Desktop"
 
+    onXChanged: shellBridge.setSurfacePosition(desktop, Qt.point(x, y))
+    onYChanged: shellBridge.setSurfacePosition(desktop, Qt.point(x, y))
+
     Component.onCompleted: {
         shellBridge.registerSurface(desktop, "desktop")
+        shellBridge.setSurfacePosition(desktop, Qt.point(x, y))
         refreshWallpaper()
     }
 

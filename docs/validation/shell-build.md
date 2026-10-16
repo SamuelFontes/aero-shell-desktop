@@ -3,6 +3,8 @@
 **Date:** 2026-10-16  
 **Environment:** Manjaro development host, Qt 6.11.2, KWin 6.7.4, KWayland 6.7.4. Build and staged files stayed in the workspace and `/tmp`; no live installation occurred.
 
+The subsequent [preflight review](preflight-review.md) found and fixed runtime QML, taskbar authorization, popup, activation, notification, and lock-screen package selection bugs. The previous package below is superseded. Current evidence includes eleven CTests and the installed greeter selecting AeroShell's `Plasma/Shell` package offscreen; it does not include a real Wayland login.
+
 ## Build and package staging
 
 - `cmake -S . -B build -G Ninja -DCMAKE_INSTALL_PREFIX=/opt/aeroshell` — configured successfully.
@@ -19,11 +21,11 @@
 
 ## Automated checks
 
-- `ctest --test-dir build --output-on-failure` — all ten CTests passed: audio controls, battery status, network status, StatusNotifier icon conversion, offscreen Aero icons/wallpaper/color-scheme checks, disconnected-bus notification model, AeroShell-only settings storage/defaults, KWin compatibility, isolated session startup, and mandatory first-login appearance.
+- `ctest --test-dir build --output-on-failure` — all eleven CTests passed (including the new runtime QML startup check): audio controls, battery status, network status, StatusNotifier icon conversion, offscreen Aero icons/wallpaper/color-scheme checks, disconnected-bus notification model, AeroShell-only settings storage/defaults, KWin compatibility, isolated session startup, and mandatory first-login appearance.
 - `bash tests/test-session-launch.sh` — passed. The fake compositor fixture checks session identity, compositor arguments, theme environment, first-login decoration setup, existing-profile preservation, unsupported KWin refusal, XDG restoration, and refusal of symlinked or hard-linked settings/KWin config paths.
 - `python tests/test-default-appearance.py` — passed. It checks the full icon tree, AeroThemePlasma wallpaper/color scheme/Start orb, cursor, Noto Sans, GTK defaults, enabled default widgets and widget settings, screen add/remove reconciliation, remote StatusNotifier menu wiring, confirmed power actions, notification service, and AeroShell-owned Polkit prompt/password handling.
 - Session fixtures confirm Qt Quick children receive the bundled Aero color/font configuration path. The CTest appearance fixture validates the expected Basic style, Noto Sans, Aero palette, and session-only environment selection.
-- `qmllint -I build/qmltypes -I /usr/lib/qt6/qml assets/plasma/look-and-feel/org.aeroshell.desktop/contents/lockscreen/*.qml` — passed. The static appearance check confirms the lock-screen package uses its bundled success sound and does not inspect KDE's shared `kdeglobals` file.
+- `qmllint -I build/qmltypes -I /usr/lib/qt6/qml assets/plasma/shells/org.aeroshell.desktop/contents/lockscreen/*.qml` — passed. The static appearance check confirms the lock-screen package uses its bundled success sound and does not inspect KDE's shared `kdeglobals` file.
 - Audio and battery fixtures use fake providers. Network tests use fake `nmcli`, including private credential-file handling. Notification tests use a deliberately disconnected D-Bus connection. None of these proves interaction with live services or physical hardware.
 - `desktop-file-validate session/aeroshell.desktop`, shell syntax checks, and `git diff --check` pass.
 
