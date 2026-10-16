@@ -95,7 +95,7 @@ Window {
                                 id: appIcon
                                 width: 34
                                 height: 34
-                                source: iconName.length ? "image://theme/" + iconName : ""
+                                source: iconName.length ? "image://theme/" + iconName + "?v=" + shellSettings.iconThemeRevision : ""
                                 sourceSize: Qt.size(width, height)
                                 fillMode: Image.PreserveAspectFit
                                 visible: status === Image.Ready

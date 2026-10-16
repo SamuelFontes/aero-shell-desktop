@@ -13,6 +13,7 @@
 #include "shellbridge.h"
 #include "shellsettings.h"
 #include "screenevents.h"
+#include "shellsounds.h"
 #include "statusnotifier.h"
 #include "themeiconprovider.h"
 
@@ -94,11 +95,18 @@ int main(int argc, char *argv[])
     }
 
     const QString defaultWallpaper = QDir(assetsPath).absoluteFilePath(QStringLiteral("wallpapers/aerothemeplasma-default.jpg"));
+    const QString soundThemePath = QDir(assetsPath).absoluteFilePath(QStringLiteral("sounds/Windows 7/stereo"));
     const QString iconThemeIndex = QDir(assetsPath).absoluteFilePath(QStringLiteral("icons/Windows 7 Aero/index.theme"));
     const QString gtkTheme = QDir(assetsPath).absoluteFilePath(QStringLiteral("themes/AeroShellAero/gtk-3.0/gtk.css"));
     const QString fontConfig = QDir(assetsPath).absoluteFilePath(QStringLiteral("fontconfig/fonts.conf"));
     const QStringList requiredAppearanceFiles{
         defaultWallpaper,
+        QDir(assetsPath).absoluteFilePath(QStringLiteral("sounds/Windows 7/index.theme")),
+        QDir(soundThemePath).absoluteFilePath(QStringLiteral("desktop-login.ogg")),
+        QDir(soundThemePath).absoluteFilePath(QStringLiteral("desktop-logout.ogg")),
+        QDir(soundThemePath).absoluteFilePath(QStringLiteral("dialog-information.ogg")),
+        QDir(soundThemePath).absoluteFilePath(QStringLiteral("dialog-warning.ogg")),
+        QDir(soundThemePath).absoluteFilePath(QStringLiteral("dialog-error.ogg")),
         iconThemeIndex,
         QDir(assetsPath).absoluteFilePath(QStringLiteral("cursors/aero-drop/index.theme")),
         QDir(assetsPath).absoluteFilePath(QStringLiteral("cursors/aero-drop/cursors/left_ptr")),
@@ -134,6 +142,13 @@ int main(int argc, char *argv[])
     }
     QIcon::setThemeSearchPaths(aeroIconPaths);
     QIcon::setFallbackThemeName(QStringLiteral("Adwaita"));
+    ShellSettings shellSettings(&app);
+    const auto applyInterfaceAppearance = [&app, &shellSettings] {
+        QIcon::setThemeName(shellSettings.iconTheme());
+        QGuiApplication::setFont(QFont(shellSettings.fontFamily()));
+    };
+    applyInterfaceAppearance();
+    QObject::connect(&shellSettings, &ShellSettings::settingsChanged, &app, applyInterfaceAppearance);
     QIcon::setThemeName(QStringLiteral("Windows 7 Aero"));
     for (const QString &requiredIcon : {QStringLiteral("start-here"), QStringLiteral("application-x-generic"),
                                         QStringLiteral("network-wireless"), QStringLiteral("audio-volume-high"),
@@ -143,8 +158,7 @@ int main(int argc, char *argv[])
             return 5;
         }
     }
-    QGuiApplication::setFont(QFont(QStringLiteral("Noto Sans")));
-
+    QIcon::setThemeName(shellSettings.iconTheme());
     ApplicationModel applications(&app);
     AudioControl audioControl(&app);
     BatteryStatus batteryStatus(&app);
@@ -157,8 +171,8 @@ int main(int argc, char *argv[])
     PowerActions powerActions(&app);
     ScreenLockController screenLockController(&app);
     ShellBridge shellBridge(&app);
-    ShellSettings shellSettings(&app);
     ScreenEvents screenEvents(&app, &app);
+    ShellSounds shellSounds(soundThemePath, &app);
     StatusNotifierModel statusNotifier(&app);
 
     QQmlApplicationEngine engine;
@@ -177,6 +191,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty(QStringLiteral("shellBridge"), &shellBridge);
     engine.rootContext()->setContextProperty(QStringLiteral("shellSettings"), &shellSettings);
     engine.rootContext()->setContextProperty(QStringLiteral("screenEvents"), &screenEvents);
+    engine.rootContext()->setContextProperty(QStringLiteral("shellSounds"), &shellSounds);
     engine.rootContext()->setContextProperty(QStringLiteral("statusNotifierModel"), &statusNotifier);
     engine.rootContext()->setContextProperty(QStringLiteral("aeroWindowModel"), shellBridge.windowModel());
     engine.rootContext()->setContextProperty(QStringLiteral("aeroThemeAssetsPath"), assetsPath);

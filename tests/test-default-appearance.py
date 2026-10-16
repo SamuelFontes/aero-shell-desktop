@@ -38,9 +38,10 @@ font_config = ROOT / "assets/fontconfig/fonts.conf"
 start_orb = ROOT / "assets/widgets/aerothemeplasma-start-orb.png"
 color_scheme = ROOT / "assets/color-schemes/AeroColorScheme1.colors"
 qt_quick_controls = ROOT / "assets/qtquickcontrols2.conf"
+sound_theme = ROOT / "assets/sounds/Windows 7"
 
 for path in (wallpaper, icon_theme, cursor_theme, gtk_theme, font_config, start_orb, color_scheme,
-             qt_quick_controls):
+             qt_quick_controls, sound_theme / "index.theme"):
     require(path.is_file(), f"required first-login appearance asset missing: {path.relative_to(ROOT)}")
 
 wallpaper_bytes = wallpaper.read_bytes()
@@ -82,6 +83,21 @@ require('"Noto Sans"' in main and "required Noto Sans font is unavailable" in ma
 require("aerothemeplasma-default.jpg" in main, "the bundled AeroThemePlasma wallpaper is not the first-login default")
 require("AeroColorScheme1.colors" in main and "schemeColor" in main,
         "the AeroThemePlasma color scheme is not applied to the shell palette")
+sound_index = (sound_theme / "index.theme").read_text()
+require("Name=Windows 7" in sound_index and "Directories=stereo" in sound_index,
+        "the bundled AeroThemePlasma event sound theme is not registered")
+for sound in ("desktop-login.ogg", "desktop-logout.ogg", "dialog-information.ogg",
+              "dialog-warning.ogg", "dialog-error.ogg", "device-added.ogg",
+              "device-removed.ogg", "message-new-instant.ogg"):
+    sound_path = sound_theme / "stereo" / sound
+    require(sound_path.is_file() and sound_path.read_bytes()[:4] == b"OggS",
+            f"the default AeroThemePlasma sound is missing or invalid: {sound}")
+require("ShellSounds shellSounds" in main and "shellsounds.cpp" in (ROOT / "CMakeLists.txt").read_text(),
+        "the shell event sound controller is not built")
+require('shellSounds.play("desktop-login")' in root_qml
+        and 'shellSounds.play("desktop-logout")' in root_qml
+        and 'shellSounds.play(notification.urgency >= 2 ? "dialog-warning" : "dialog-information")' in root_qml,
+        "login, logout, and notification events do not use the bundled sound theme")
 qt_controls_config = qt_quick_controls.read_text()
 require("Style=Basic" in qt_controls_config and "Font\\Family=Noto Sans" in qt_controls_config
         and "Palette\\Highlight=#418bd4" in qt_controls_config
@@ -91,6 +107,11 @@ require("QFileInfo(requiredAsset).isFile()" in main, "missing bundled appearance
 session_launcher = (ROOT / "session/aeroshell-session-wayland").read_text()
 require("GTK_THEME" in session_launcher and "AeroShellAero" in session_launcher,
         "the Wayland session does not select the private GTK theme")
+require('canberra-gtk-module' in session_launcher and "GTK_MODULES" in session_launcher,
+        "the Wayland session does not enable GTK 3 event sounds privately")
+require("gtk-sound-theme-name=Windows 7" in
+        (ROOT / "assets/themes/AeroShellAero/gtk-3.0/settings.ini").read_text(),
+        "GTK 3 applications do not receive the bundled Windows 7 sound theme")
 require('export QT_QUICK_CONTROLS_CONF="$qt_quick_controls_config"' in session_launcher,
         "Qt Quick apps launched in AeroShell do not receive its private default appearance")
 require('export XCURSOR_THEME="aero-drop"' in session_launcher
@@ -124,6 +145,15 @@ require("screenEvents" in root_qml and "onScreensChanged" in root_qml
         "screen add/remove events do not reconcile AeroShell windows for display hotplug")
 require('m_settings.value(panelWidgetKey(widget), true).toBool()' in settings_model,
         "new AeroShell profiles must enable all supported panel widgets by default")
+require("availableFonts" in settings_model and "setFontFamily" in settings_model
+        and "availableIconThemes" in settings_model and "setIconTheme" in settings_model
+        and "resetInterfaceAppearance" in settings_qml,
+        "AeroShell Settings must offer font and icon theme selection with an AeroThemePlasma reset")
+require("iconThemeRevision" in settings_model
+        and "shellSettings.iconThemeRevision" in launcher_qml
+        and "shellSettings.iconThemeRevision" in panel_qml
+        and "shellSettings.iconThemeRevision" in (ROOT / "src/shell/qml/DesktopWindow.qml").read_text(),
+        "shell icon images must refresh when the user changes the AeroShell icon theme")
 for widget in ("network", "audio", "battery", "tray", "keyboard", "notifications", "clock"):
     require(f'shellSettings.panelWidgets.{widget}' in panel_qml
             and f'setPanelWidgetVisible("{widget}"' in settings_qml,
@@ -192,4 +222,4 @@ require(auth_qml.count("textFormat: Text.PlainText") >= 3,
 require("System D-Bus is unavailable" in (ROOT / "src/shell/polkitagent.cpp").read_text(),
         "PolicyKit registration must report missing system D-Bus")
 
-print("PASS: mandatory first-login AeroThemePlasma appearance, Qt Quick colors/font, all mapped widgets, secure-lock defaults, confirmed power actions, notifications, and session-owned authentication prompt are configured")
+print("PASS: mandatory first-login AeroThemePlasma appearance, event sounds, interface settings, Qt Quick colors/font, all mapped widgets, secure-lock defaults, confirmed power actions, notifications, and session-owned authentication prompt are configured")

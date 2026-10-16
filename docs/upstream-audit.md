@@ -28,6 +28,7 @@
 | AeroThemePlasma SDDM KCM | `https://gitgud.io/aeroshell/aeroshell-sddm-kcm.git` | **Excluded** by project requirements | Must not be fetched as a runtime/build dependency or installed |
 | AeroThemePlasma icons | `https://gitgud.io/aeroshell/atp/aerothemeplasma-icons` | Required default icon theme; user's installed theme is bundled | Full pin, install paths, private application selection |
 | AeroThemePlasma sounds | `https://gitgud.io/aeroshell/atp/aerothemeplasma-sounds` | Required default sound theme candidate | Full pin, install paths, private sound selection |
+| Windows 7 sound theme | `https://github.com/hyperballic/Windows-Sounds-for-Plasma` | Local checkout is pinned to `926b5052ccb28cb8f97e26397e55e16ed1ede9e8`; its Windows 7 theme is bundled and selected for GTK 3 and AeroShell-native events | Compare its exact contents against AeroThemePlasma's separate sound repository when that source is reachable; Qt/KDE event playback remains unverified |
 | Windows 7 Better GTK companion | `https://gitgud.io/Gamer95875/Windows-7-Better` (recommended by upstream install guide) | GTK appearance candidate; AeroShell currently uses its own session-scoped style | GitGud returned HTTP 403; full source, install paths, and session-scoped GTK selection |
 
 The installer clones AeroThemePlasma components and checks out `Plasma/6.7` where shown. Icons and sounds use branch updates without the same explicit checkout in the inspected script. That pattern is not suitable for reproducible pins.

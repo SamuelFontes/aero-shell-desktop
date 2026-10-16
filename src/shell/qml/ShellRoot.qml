@@ -149,5 +149,21 @@ QtObject {
         function onScreensChanged() { shell.reconcileScreens() }
     }
 
+    Connections {
+        target: notificationModel
+        function onNotificationAdded(id) {
+            const notification = notificationModel.latestNotification
+            shellSounds.play(notification.urgency >= 2 ? "dialog-warning" : "dialog-information")
+        }
+    }
+
+    Timer {
+        interval: 900
+        running: true
+        repeat: false
+        onTriggered: shellSounds.play("desktop-login")
+    }
+
     Component.onCompleted: Qt.callLater(function() { shell.reconcileScreens() })
+    Component.onDestruction: shellSounds.play("desktop-logout")
 }

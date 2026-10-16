@@ -166,7 +166,7 @@ Window {
                     Image {
                         Layout.preferredWidth: 20
                         Layout.preferredHeight: 20
-                        source: appId.length ? `image://theme/${appId.replace(/\.desktop$/, "")}` : ""
+                        source: appId.length ? `image://theme/${appId.replace(/\.desktop$/, "")}?v=${shellSettings.iconThemeRevision}` : ""
                         sourceSize: Qt.size(width, height)
                         fillMode: Image.PreserveAspectFit
                         visible: status === Image.Ready
@@ -215,7 +215,7 @@ Window {
                     anchors.centerIn: parent
                     width: 21
                     height: 21
-                    source: networkStatus.connected ? "image://theme/network-wireless" : "image://theme/network-offline"
+                    source: (networkStatus.connected ? "image://theme/network-wireless" : "image://theme/network-offline") + "?v=" + shellSettings.iconThemeRevision
                     sourceSize: Qt.size(width, height)
                     fillMode: Image.PreserveAspectFit
                     visible: status === Image.Ready
@@ -407,7 +407,7 @@ Window {
                 anchors.centerIn: parent
                 width: 22
                 height: 22
-                source: audioControl.muted ? "image://theme/audio-volume-muted" : "image://theme/audio-volume-high"
+                source: (audioControl.muted ? "image://theme/audio-volume-muted" : "image://theme/audio-volume-high") + "?v=" + shellSettings.iconThemeRevision
                 sourceSize: Qt.size(width, height)
                 fillMode: Image.PreserveAspectFit
                 visible: status === Image.Ready
@@ -493,7 +493,7 @@ Window {
                 Image {
                     Layout.preferredWidth: 19
                     Layout.preferredHeight: 19
-                    source: batteryStatus.percentage < 20 ? "image://theme/battery-low" : "image://theme/battery-full"
+                    source: (batteryStatus.percentage < 20 ? "image://theme/battery-low" : "image://theme/battery-full") + "?v=" + shellSettings.iconThemeRevision
                     sourceSize: Qt.size(width, height)
                     fillMode: Image.PreserveAspectFit
                 }
@@ -565,7 +565,7 @@ Window {
                     anchors.centerIn: parent
                     width: 21
                     height: 21
-                    source: "image://theme/notifications"
+                    source: "image://theme/notifications?v=" + shellSettings.iconThemeRevision
                     sourceSize: Qt.size(width, height)
                     fillMode: Image.PreserveAspectFit
                 }
@@ -658,7 +658,7 @@ Window {
                                     visible: appIcon.length > 0
                                     Layout.preferredWidth: visible ? 18 : 0
                                     Layout.preferredHeight: visible ? 18 : 0
-                                    source: appIcon.startsWith("/") ? `file://${appIcon}` : `image://theme/${encodeURIComponent(appIcon)}`
+                                    source: appIcon.startsWith("/") ? `file://${appIcon}` : `image://theme/${encodeURIComponent(appIcon)}?v=${shellSettings.iconThemeRevision}`
                                     sourceSize: Qt.size(18, 18)
                                     fillMode: Image.PreserveAspectFit
                                 }
@@ -833,7 +833,7 @@ Window {
                             fillMode: Image.PreserveAspectFit
                             source: trayButton.iconDataUrl.length > 0 ? trayButton.iconDataUrl
                                   : trayButton.iconName.startsWith("/") ? `file://${trayButton.iconName}`
-                                  : trayButton.iconName.length > 0 ? `image://theme/${encodeURIComponent(trayButton.iconName)}` : ""
+                                  : trayButton.iconName.length > 0 ? `image://theme/${encodeURIComponent(trayButton.iconName)}?v=${shellSettings.iconThemeRevision}` : ""
                             visible: status === Image.Ready
                         }
                         Text {
@@ -942,7 +942,7 @@ Window {
                                 Layout.preferredWidth: 18
                                 Layout.preferredHeight: 18
                                 source: remoteMenuItem.iconName.length
-                                        ? `image://theme/${encodeURIComponent(remoteMenuItem.iconName)}` : ""
+                                        ? `image://theme/${encodeURIComponent(remoteMenuItem.iconName)}?v=${shellSettings.iconThemeRevision}` : ""
                                 sourceSize: Qt.size(18, 18)
                                 fillMode: Image.PreserveAspectFit
                                 visible: status === Image.Ready

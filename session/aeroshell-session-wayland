@@ -131,6 +131,12 @@ export XDG_SESSION_TYPE="wayland"
 export DESKTOP_SESSION="aeroshell"
 export XDG_DATA_DIRS="$current_data_dirs"
 export GTK_THEME="AeroShellAero"
+current_gtk_modules="${GTK_MODULES:-}"
+case ":$current_gtk_modules:" in
+    *:canberra-gtk-module:*) ;;
+    *) current_gtk_modules="${current_gtk_modules:+$current_gtk_modules:}canberra-gtk-module" ;;
+esac
+export GTK_MODULES="$current_gtk_modules"
 export FONTCONFIG_FILE="$aero_data_dir/fontconfig/fonts.conf"
 export QT_QUICK_CONTROLS_CONF="$qt_quick_controls_config"
 export XCURSOR_THEME="aero-drop"

@@ -61,6 +61,8 @@ qt_add_executable(aeroshell-shell
     src/shell/dbusmenumodel.h
     src/shell/screenevents.cpp
     src/shell/screenevents.h
+    src/shell/shellsounds.cpp
+    src/shell/shellsounds.h
 )
 
 qt_add_qml_module(aeroshell-shell
@@ -156,8 +158,10 @@ if(BUILD_TESTING)
         src/shell/shellsettings.cpp
         src/shell/shellsettings.h
     )
-    target_link_libraries(test-shell-settings PRIVATE Qt6::Core)
+    target_link_libraries(test-shell-settings PRIVATE Qt6::Core Qt6::Gui)
+    target_compile_definitions(test-shell-settings PRIVATE AEROSHELL_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     add_test(NAME shell-settings COMMAND test-shell-settings)
+    set_tests_properties(shell-settings PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
     add_test(NAME kwin-compatibility COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/test-compatibility.sh)
     add_test(NAME session-launch COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/test-session-launch.sh)

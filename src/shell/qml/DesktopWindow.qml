@@ -82,7 +82,7 @@ Window {
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: 42
                 height: 42
-                source: iconName.length ? "image://theme/" + iconName : ""
+                source: iconName.length ? "image://theme/" + iconName + "?v=" + shellSettings.iconThemeRevision : ""
                 sourceSize: Qt.size(width, height)
                 fillMode: Image.PreserveAspectFit
                 visible: status === Image.Ready

@@ -11,8 +11,8 @@ Window {
     readonly property string screenName: targetScreen ? targetScreen.name : "default"
 
     title: "AeroShell Settings"
-    width: 500
-    height: 610
+    width: 520
+    height: 700
     minimumWidth: 440
     minimumHeight: 420
     screen: targetScreen
@@ -44,6 +44,43 @@ Window {
             ColumnLayout {
                 width: settingsScroll.availableWidth
                 spacing: 12
+
+                GroupBox {
+                    title: "AeroShell appearance"
+                    Layout.fillWidth: true
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        spacing: 8
+
+                        Label {
+                            Layout.fillWidth: true
+                            wrapMode: Text.WordWrap
+                            text: "AeroThemePlasma is selected by default. These choices affect the shell only; application and KDE settings remain untouched."
+                        }
+
+                        Label { text: "Interface font" }
+                        ComboBox {
+                            Layout.fillWidth: true
+                            model: shellSettings.availableFonts
+                            currentIndex: Math.max(0, shellSettings.availableFonts.indexOf(shellSettings.fontFamily))
+                            onActivated: shellSettings.setFontFamily(currentText)
+                        }
+
+                        Label { text: "Shell icon theme" }
+                        ComboBox {
+                            Layout.fillWidth: true
+                            model: shellSettings.availableIconThemes
+                            currentIndex: Math.max(0, shellSettings.availableIconThemes.indexOf(shellSettings.iconTheme))
+                            onActivated: shellSettings.setIconTheme(currentText)
+                        }
+
+                        Button {
+                            text: "Restore AeroThemePlasma font and icons"
+                            onClicked: shellSettings.resetInterfaceAppearance()
+                        }
+                    }
+                }
 
                 GroupBox {
                     title: "Desktop background"

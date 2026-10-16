@@ -3,7 +3,11 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QFontDatabase>
+#include <QIcon>
 #include <QStandardPaths>
+
+#include <algorithm>
 
 namespace
 {
@@ -16,6 +20,9 @@ const QStringList panelWidgetNames{
     QStringLiteral("notifications"),
     QStringLiteral("clock"),
 };
+
+const QString defaultFontFamily = QStringLiteral("Noto Sans");
+const QString defaultIconTheme = QStringLiteral("Windows 7 Aero");
 }
 
 ShellSettings::ShellSettings(QObject *parent)
@@ -97,6 +104,59 @@ void ShellSettings::resetPanelWidgets()
     Q_EMIT settingsChanged();
 }
 
+void ShellSettings::setFontFamily(const QString &family)
+{
+    const QStringList fonts = availableFonts();
+    const auto match = std::find_if(fonts.cbegin(), fonts.cend(), [&family](const QString &candidate) {
+        return candidate.compare(family, Qt::CaseInsensitive) == 0;
+    });
+    if (match == fonts.cend()) {
+        return;
+    }
+
+    m_settings.setValue(QStringLiteral("appearance/fontFamily"), *match);
+    m_settings.sync();
+    if (m_settings.status() != QSettings::NoError) {
+        qWarning("AeroShell could not save its interface font setting.");
+        return;
+    }
+    Q_EMIT settingsChanged();
+}
+
+void ShellSettings::setIconTheme(const QString &theme)
+{
+    const QStringList themes = availableIconThemes();
+    if (!themes.contains(theme)) {
+        return;
+    }
+
+    const QString current = iconTheme();
+    if (current == theme) {
+        return;
+    }
+    m_settings.setValue(QStringLiteral("appearance/iconTheme"), theme);
+    m_settings.sync();
+    if (m_settings.status() != QSettings::NoError) {
+        qWarning("AeroShell could not save its icon theme setting.");
+        return;
+    }
+    ++m_iconThemeRevision;
+    Q_EMIT settingsChanged();
+}
+
+void ShellSettings::resetInterfaceAppearance()
+{
+    m_settings.remove(QStringLiteral("appearance/fontFamily"));
+    m_settings.remove(QStringLiteral("appearance/iconTheme"));
+    m_settings.sync();
+    if (m_settings.status() != QSettings::NoError) {
+        qWarning("AeroShell could not reset its interface appearance.");
+        return;
+    }
+    ++m_iconThemeRevision;
+    Q_EMIT settingsChanged();
+}
+
 QVariantMap ShellSettings::panelWidgets() const
 {
     QVariantMap result;
@@ -104,6 +164,58 @@ QVariantMap ShellSettings::panelWidgets() const
         result.insert(widget, m_settings.value(panelWidgetKey(widget), true).toBool());
     }
     return result;
+}
+
+QStringList ShellSettings::availableFonts() const
+{
+    QStringList fonts = QFontDatabase::families();
+    fonts.removeDuplicates();
+    fonts.sort(Qt::CaseInsensitive);
+    return fonts;
+}
+
+QStringList ShellSettings::availableIconThemes() const
+{
+    QStringList themes;
+    for (const QString &themeRoot : QIcon::themeSearchPaths()) {
+        const QDir root(themeRoot);
+        for (const QString &theme : root.entryList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name)) {
+            if (QFileInfo(root.filePath(theme + QStringLiteral("/index.theme"))).isFile()
+                && !themes.contains(theme)) {
+                themes.push_back(theme);
+            }
+        }
+    }
+    themes.sort(Qt::CaseInsensitive);
+    return themes;
+}
+
+QString ShellSettings::fontFamily() const
+{
+    const QString requested = m_settings.value(QStringLiteral("appearance/fontFamily"), defaultFontFamily).toString();
+    for (const QString &family : availableFonts()) {
+        if (family.compare(requested, Qt::CaseInsensitive) == 0) {
+            return family;
+        }
+    }
+    return defaultFontFamily;
+}
+
+QString ShellSettings::iconTheme() const
+{
+    const QString requested = m_settings.value(QStringLiteral("appearance/iconTheme"), defaultIconTheme).toString();
+    if (availableIconThemes().contains(requested)) {
+        return requested;
+    }
+    if (availableIconThemes().contains(defaultIconTheme)) {
+        return defaultIconTheme;
+    }
+    return QStringLiteral("hicolor");
+}
+
+int ShellSettings::iconThemeRevision() const
+{
+    return m_iconThemeRevision;
 }
 
 QString ShellSettings::wallpaperKey(const QString &screenName) const
