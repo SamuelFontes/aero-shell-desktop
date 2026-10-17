@@ -36,7 +36,7 @@ Q_SIGNALS:
 
 private Q_SLOTS:
     void refresh();
-    void onLayoutChanged(const QString &name);
+    void onLayoutChanged(uint index);
 
 private:
     QDBusServiceWatcher *m_serviceWatcher = nullptr;

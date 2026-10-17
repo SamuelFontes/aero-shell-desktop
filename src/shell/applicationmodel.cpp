@@ -11,6 +11,8 @@
 #include <QFileInfo>
 #include <QStandardPaths>
 #include <QUrl>
+#include <QProcess>
+#include <QCoreApplication>
 
 #include <algorithm>
 
@@ -18,7 +20,7 @@ ApplicationModel::ApplicationModel(QObject *parent)
     : QAbstractListModel(parent)
 {
     const auto services = KApplicationTrader::query([](const KService::Ptr &service) {
-        return service && service->isApplication() && !service->noDisplay();
+        return service && service->isApplication() && (!service->noDisplay() || service->storageId() == QLatin1String("org.aeroshell.explorer.desktop"));
     });
 
     m_allEntries.reserve(services.size());
@@ -95,7 +97,7 @@ void ApplicationModel::setQuery(const QString &query)
 void ApplicationModel::launch(const QString &storageId)
 {
     const KService::Ptr service = KService::serviceByStorageId(storageId);
-    if (!service || !service->isApplication() || service->noDisplay()) {
+    if (!service || !service->isApplication() || (service->noDisplay() && storageId != QLatin1String("org.aeroshell.explorer.desktop"))) {
         Q_EMIT launchFailed(storageId, tr("The application entry is no longer available."));
         return;
     }
@@ -129,24 +131,10 @@ void ApplicationModel::openLocation(const QString &location)
         return;
     }
 
-    const QUrl url = QUrl::fromLocalFile(path);
-    const KService::Ptr service = KApplicationTrader::preferredService(QStringLiteral("inode/directory"));
-    if (!service) {
-        if (!QDesktopServices::openUrl(url)) {
-            Q_EMIT launchFailed(location, tr("No file manager is available."));
-        }
-        return;
+    const QString explorer = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("aeroshell-explorer"));
+    if (!QProcess::startDetached(explorer, {path})) {
+        Q_EMIT launchFailed(location, tr("AeroShell Explorer could not be started."));
     }
-
-    auto *job = new KIO::ApplicationLauncherJob(service, this);
-    job->setUrls({url});
-    const QString applicationName = service->name();
-    connect(job, &KJob::result, this, [this, job, applicationName] {
-        if (job->error()) {
-            Q_EMIT launchFailed(applicationName, job->errorString());
-        }
-    });
-    job->start();
 }
 
 QString ApplicationModel::locationPath(const QString &location) const
@@ -189,4 +177,25 @@ void ApplicationModel::rebuildVisibleRows()
             m_visibleRows.push_back(static_cast<int>(row));
         }
     }
+}
+
+bool ApplicationModel::run(const QString &command)
+{
+    QStringList arguments = QProcess::splitCommand(command.trimmed());
+    if (arguments.isEmpty()) return false;
+    QString executable = arguments.takeFirst();
+    if (executable == QLatin1String("explorer")) {
+        executable = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("aeroshell-explorer"));
+    } else if (executable == QLatin1String("taskmgr")) {
+        executable = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("aeroshell-explorer"));
+        arguments.prepend(QStringLiteral("--task-manager"));
+    } else if (executable == QLatin1String("cmd")) {
+        executable = QStringLiteral("konsole");
+    } else if (QFileInfo(executable).isDir()) {
+        arguments.prepend(executable);
+        executable = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("aeroshell-explorer"));
+    }
+    if (QProcess::startDetached(executable, arguments)) return true;
+    Q_EMIT launchFailed(command, tr("The program could not be started. Check its name and try again."));
+    return false;
 }

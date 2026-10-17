@@ -2,6 +2,7 @@
 #include "shellbridge.h"
 
 #include <KWayland/Client/connection_thread.h>
+#include <KWayland/Client/blur.h>
 #include <KWayland/Client/plasmashell.h>
 #include <KWayland/Client/plasmawindowmanagement.h>
 #include <KWayland/Client/plasmawindowmodel.h>
@@ -12,6 +13,8 @@
 #include <QCoreApplication>
 #include <QGuiApplication>
 #include <QPlatformSurfaceEvent>
+#include <QTimer>
+#include <QScopeGuard>
 
 using namespace KWayland::Client;
 
@@ -59,6 +62,11 @@ ShellBridge::ShellBridge(QObject *parent)
         m_ready = true;
         Q_EMIT readyChanged();
     });
+    connect(m_registry, &Registry::blurAnnounced, this, [this](quint32 name, quint32 version) {
+        if (m_blurManager) return;
+        m_blurManager = m_registry->createBlurManager(name, version, this);
+        for (QWindow *window : m_shellSurfaces.keys()) attachBlur(window);
+    });
     m_registry->setup();
 }
 
@@ -99,12 +107,14 @@ void ShellBridge::registerSurface(QWindow *window, const QString &role)
     if (!window) {
         return;
     }
+    if (m_windowRoles.contains(window)) return;
     m_windowRoles.insert(window, role);
     window->installEventFilter(this);
     connect(window, &QObject::destroyed, this, [this, window] {
         m_windowRoles.remove(window);
         m_windowPositions.remove(window);
         m_shellSurfaces.remove(window);
+        m_blurs.remove(window);
     });
     if (window->isVisible()) {
         attachSurface(window);
@@ -131,6 +141,7 @@ bool ShellBridge::eventFilter(QObject *watched, QEvent *event)
         if (surfaceEvent->surfaceEventType() == QPlatformSurfaceEvent::SurfaceCreated) {
             attachSurface(window);
         } else if (surfaceEvent->surfaceEventType() == QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed) {
+            if (const auto blur = m_blurs.take(window)) { blur->release(); blur->deleteLater(); }
             const auto shellSurface = m_shellSurfaces.take(window);
             if (shellSurface) {
                 if (shellSurface->isValid()) {
@@ -139,6 +150,12 @@ bool ShellBridge::eventFilter(QObject *watched, QEvent *event)
                 shellSurface->deleteLater();
             }
         }
+    }
+    // QtWayland can emit SurfaceCreated before Surface::fromWindow is ready.
+    // Retry when the window is mapped instead of leaving it as a normal toplevel.
+    if (window && m_windowRoles.contains(window)
+        && (event->type() == QEvent::Show || event->type() == QEvent::Expose)) {
+        QTimer::singleShot(0, window, [this, window] { attachSurface(window); });
     }
     return QObject::eventFilter(watched, event);
 }
@@ -152,9 +169,11 @@ void ShellBridge::attachPendingSurfaces()
 
 void ShellBridge::attachSurface(QWindow *window)
 {
-    if (!window || !m_plasmaShell || !m_plasmaShell->isValid() || m_shellSurfaces.value(window)) {
+    if (!window || !m_plasmaShell || !m_plasmaShell->isValid() || m_shellSurfaces.value(window) || m_attachingSurfaces.contains(window)) {
         return;
     }
+    m_attachingSurfaces.insert(window);
+    const auto attaching = qScopeGuard([this, window] { m_attachingSurfaces.remove(window); });
     Surface *surface = Surface::fromWindow(window);
     if (!surface || !surface->isValid()) {
         return;
@@ -174,6 +193,7 @@ void ShellBridge::attachSurface(QWindow *window)
         shellSurface->setPanelBehavior(PlasmaShellSurface::PanelBehavior::AlwaysVisible);
     } else if (role == QLatin1String("popup")) {
         shellSurface->setRole(PlasmaShellSurface::Role::AppletPopup);
+        shellSurface->setPanelTakesFocus(true);
     } else {
         shellSurface->setRole(PlasmaShellSurface::Role::Normal);
     }
@@ -183,4 +203,21 @@ void ShellBridge::attachSurface(QWindow *window)
         shellSurface->setPosition(m_windowPositions.value(window));
     }
     m_shellSurfaces.insert(window, shellSurface);
+    attachBlur(window);
+    qInfo() << "AeroShell surface role attached:" << role << window->geometry();
+}
+
+void ShellBridge::attachBlur(QWindow *window)
+{
+    if (!m_blurManager || !m_blurManager->isValid() || m_blurs.value(window)) return;
+    const QString role = m_windowRoles.value(window);
+    if (role != QLatin1String("panel") && role != QLatin1String("popup")) return;
+    auto *surface = Surface::fromWindow(window);
+    if (!surface || !surface->isValid()) return;
+    auto *blur = m_blurManager->createBlur(surface, window);
+    if (blur) {
+        blur->setRegion(nullptr);
+        blur->commit();
+        m_blurs.insert(window, blur);
+    }
 }

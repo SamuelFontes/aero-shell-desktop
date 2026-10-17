@@ -1,0 +1,13 @@
+[kwin]
+Show Desktop=Meta+D,Meta+D,Show Desktop
+Window Close=Alt+F4,Alt+F4,Close Window
+Window Operations Menu=Alt+Space,Alt+Space,Window Menu
+Window Quick Tile Left=Meta+Left,Meta+Left,Tile Left
+Window Quick Tile Right=Meta+Right,Meta+Right,Tile Right
+Window Maximize=none,none,Maximize Window
+Window Minimize=none,none,Minimize Window
+Walk Through Windows=Alt+Tab,Alt+Tab,Switch Windows
+Walk Through Windows (Reverse)=Alt+Shift+Tab,Alt+Shift+Tab,Switch Windows Backwards
+Walk Through Windows of Current Application=none,none,Switch Application Windows
+Walk Through Windows Alternative=Meta+Tab,Meta+Tab,Switch Windows
+Walk Through Windows Alternative (Reverse)=Meta+Shift+Tab,Meta+Shift+Tab,Switch Windows Backwards

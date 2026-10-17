@@ -1,5 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 #include "applicationmodel.h"
+#include "shellactions.h"
+#include "taskbarmodel.h"
 #include "audiocontrol.h"
 #include "batterystatus.h"
 #include "desktopitemmodel.h"
@@ -18,6 +20,9 @@
 #include "themeiconprovider.h"
 
 #include <QCoreApplication>
+#include <QTimer>
+#include <QQuickWindow>
+#include <QCommandLineParser>
 #include <QDBusConnection>
 #include <QDir>
 #include <QFileInfo>
@@ -74,6 +79,10 @@ int main(int argc, char *argv[])
 
     QGuiApplication app(argc, argv);
     app.setQuitOnLastWindowClosed(false);
+    QCommandLineParser options;
+    options.addHelpOption();
+    options.addOption({QStringLiteral("smoke-test"), QStringLiteral("Capture mapped shell windows and exit."), QStringLiteral("directory")});
+    options.process(app);
     const QString assetsPath = QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(QStringLiteral("../share/aeroshell"));
     const QString colorSchemePath = QDir(assetsPath).absoluteFilePath(QStringLiteral("color-schemes/AeroColorScheme1.colors"));
     const QSettings colorScheme(colorSchemePath, QSettings::IniFormat);
@@ -164,6 +173,7 @@ int main(int argc, char *argv[])
         }
     }
     QIcon::setThemeName(shellSettings.iconTheme());
+    qInfo("AeroShell: initializing desktop services");
     ApplicationModel applications(&app);
     AudioControl audioControl(&app);
     BatteryStatus batteryStatus(&app);
@@ -172,15 +182,26 @@ int main(int argc, char *argv[])
     KeyboardLayoutStatus keyboardLayoutStatus(&app);
     NetworkStatus networkStatus(&app);
     NotificationsModel notifications(QDBusConnection::sessionBus(), &app);
+    qInfo("AeroShell: initializing authentication agent");
     PolkitAgentModel polkitAgent(&app);
     PowerActions powerActions(&app);
     ScreenLockController screenLockController(&app);
+    qInfo("AeroShell: connecting compositor shell protocols");
     ShellBridge shellBridge(&app);
     ScreenEvents screenEvents(&app, &app);
     ShellSounds shellSounds(soundThemePath, &app);
     StatusNotifierModel statusNotifier(&app);
 
+    TaskbarModel tasks(&applications, &app);
+    tasks.setSource(qobject_cast<QAbstractItemModel *>(shellBridge.windowModel()));
+    ShellActions shellActions(&app);
+    if (!QDBusConnection::sessionBus().registerService(QStringLiteral("org.aeroshell.Shell"))
+        || !QDBusConnection::sessionBus().registerObject(QStringLiteral("/Shell"), &shellActions, QDBusConnection::ExportAllSlots)) {
+        qCritical("Could not register AeroShell desktop actions on its private session bus.");
+        return 4;
+    }
     QQmlApplicationEngine engine;
+    engine.rootContext()->setContextProperty(QStringLiteral("shellActions"), &shellActions);
     engine.addImageProvider(QStringLiteral("theme"), new ThemeIconProvider);
     engine.rootContext()->setContextProperty(QStringLiteral("applicationModel"), &applications);
     engine.rootContext()->setContextProperty(QStringLiteral("audioControl"), &audioControl);
@@ -198,13 +219,13 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty(QStringLiteral("screenEvents"), &screenEvents);
     engine.rootContext()->setContextProperty(QStringLiteral("shellSounds"), &shellSounds);
     engine.rootContext()->setContextProperty(QStringLiteral("statusNotifierModel"), &statusNotifier);
-    engine.rootContext()->setContextProperty(QStringLiteral("aeroWindowModel"), shellBridge.windowModel());
+    engine.rootContext()->setContextProperty(QStringLiteral("aeroWindowModel"), &tasks);
     engine.rootContext()->setContextProperty(QStringLiteral("aeroThemeAssetsPath"), assetsPath);
     engine.rootContext()->setContextProperty(
         QStringLiteral("aeroDefaultWallpaperUrl"),
         QUrl::fromLocalFile(defaultWallpaper));
-    QObject::connect(&shellBridge, &ShellBridge::windowModelChanged, &engine, [&engine, &shellBridge] {
-        engine.rootContext()->setContextProperty(QStringLiteral("aeroWindowModel"), shellBridge.windowModel());
+    QObject::connect(&shellBridge, &ShellBridge::windowModelChanged, &engine, [&tasks, &shellBridge] {
+        tasks.setSource(qobject_cast<QAbstractItemModel *>(shellBridge.windowModel()));
     });
     QObject::connect(&shellBridge, &ShellBridge::integrationError, &app, [](const QString &message) {
         qCritical().noquote() << message;
@@ -221,9 +242,39 @@ int main(int argc, char *argv[])
             QStringLiteral("Could not open %1").arg(name), message, {}, {{QStringLiteral("urgency"), 2U}}, 0);
     });
 
+    qInfo("AeroShell: creating desktop and taskbar");
     engine.loadFromModule(QStringLiteral("AeroShell.Shell"), QStringLiteral("ShellRoot"));
     if (engine.rootObjects().isEmpty()) {
         return 3;
+    }
+    if (options.isSet(QStringLiteral("smoke-test"))) {
+        const QString output = options.value(QStringLiteral("smoke-test"));
+        const auto capture = [&app, output] {
+            QDir().mkpath(output);
+            for (QWindow *window : app.allWindows()) {
+                if (window->isVisible()) if (auto *quick = qobject_cast<QQuickWindow *>(window))
+                    quick->grabWindow().save(QDir(output).filePath(window->title() + QStringLiteral(".png")));
+            }
+        };
+        QTimer::singleShot(400, &app, [&applications] { applications.run(QStringLiteral("explorer /tmp")); });
+        QTimer::singleShot(650, &app, [&applications] { applications.run(QStringLiteral("explorer /tmp")); });
+        QTimer::singleShot(1100, &app, [&shellActions] { shellActions.dispatch(QStringLiteral("start")); });
+        QTimer::singleShot(1600, &app, [capture, &shellActions] { capture(); shellActions.dispatch(QStringLiteral("dismiss")); });
+        QTimer::singleShot(1900, &app, [&shellActions] { shellActions.dispatch(QStringLiteral("run")); });
+        QTimer::singleShot(2400, &app, [capture, &shellActions] { capture(); shellActions.dispatch(QStringLiteral("dismiss")); });
+        QTimer::singleShot(3500, &app, [&app, output] {
+            bool panelFound = false;
+            QDir().mkpath(output);
+            for (QWindow *window : app.allWindows()) {
+                if (!window->isVisible()) continue;
+                qInfo() << "Mapped shell window" << window->title() << window->geometry() << "exposed" << window->isExposed();
+                if (window->title() == QStringLiteral("AeroShell Panel")) panelFound |= window->isExposed();
+                if (auto *quick = qobject_cast<QQuickWindow *>(window)) {
+                    quick->grabWindow().save(QDir(output).filePath(window->title() + QStringLiteral(".png")));
+                }
+            }
+            app.exit(panelFound ? 0 : 6);
+        });
     }
     return app.exec();
 }

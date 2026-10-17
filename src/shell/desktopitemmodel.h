@@ -24,6 +24,8 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     Q_INVOKABLE void open(const QUrl &url);
+    Q_INVOKABLE void newFolder();
+    Q_INVOKABLE void refresh() { reload(); }
 
 Q_SIGNALS:
     void openFailed(const QString &name, const QString &message);

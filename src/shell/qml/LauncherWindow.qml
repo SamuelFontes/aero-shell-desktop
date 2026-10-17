@@ -13,25 +13,28 @@ Window {
 
     screen: targetScreen
     transientParent: panelWindow
-    x: targetScreen ? targetScreen.virtualX + 10 : 10
-    y: targetScreen && panelWindow ? panelWindow.y - height - 6 : 166
+    readonly property real desiredX: targetScreen ? targetScreen.virtualX + 10 : 10
+    readonly property real desiredY: targetScreen && panelWindow ? panelWindow.desiredY - height - 6 : 166
+    x: desiredX
+    y: desiredY
     width: 462
     height: Math.min(560, targetScreen ? targetScreen.height - 80 : 560)
     visible: false
     color: "transparent"
-    flags: Qt.FramelessWindowHint | Qt.Popup
+    flags: Qt.FramelessWindowHint | Qt.Tool | Qt.WindowStaysOnTopHint
     title: "AeroShell Start"
 
-    onXChanged: shellBridge.setSurfacePosition(launcher, Qt.point(x, y))
-    onYChanged: shellBridge.setSurfacePosition(launcher, Qt.point(x, y))
+    onDesiredXChanged: shellBridge.setSurfacePosition(launcher, Qt.point(desiredX, desiredY))
+    onDesiredYChanged: shellBridge.setSurfacePosition(launcher, Qt.point(desiredX, desiredY))
 
     Component.onCompleted: {
         shellBridge.registerSurface(launcher, "popup")
-        shellBridge.setSurfacePosition(launcher, Qt.point(x, y))
+        shellBridge.setSurfacePosition(launcher, Qt.point(desiredX, desiredY))
     }
+    onActiveChanged: if (visible && !active) hide()
     onVisibleChanged: {
         if (visible) {
-            shellBridge.setSurfacePosition(launcher, Qt.point(x, y))
+            shellBridge.setSurfacePosition(launcher, Qt.point(desiredX, desiredY))
             search.forceActiveFocus()
         }
     }
@@ -65,14 +68,7 @@ Window {
                 anchors.margins: 10
                 spacing: 8
 
-                TextField {
-                    id: search
-                    Layout.fillWidth: true
-                    placeholderText: "Search programs"
-                    selectByMouse: true
-                    onTextChanged: applicationModel.query = text
-                    Keys.onEscapePressed: launcher.visible = false
-                }
+
 
                 ListView {
                     id: applicationList
@@ -87,7 +83,8 @@ Window {
                         required property string comment
                         required property string iconName
                         width: applicationList.width
-                        height: 48
+                        height: 42
+                        highlighted: ListView.isCurrentItem
                         onClicked: {
                             applicationModel.launch(storageId)
                             launcher.visible = false
@@ -139,6 +136,22 @@ Window {
                         }
                     }
                     ScrollBar.vertical: ScrollBar { }
+                }
+                TextField {
+                    id: search
+                    Layout.fillWidth: true
+                    placeholderText: "Search programs"
+                    selectByMouse: true
+                    onTextChanged: { applicationModel.query = text; applicationList.currentIndex = 0 }
+                    Keys.onDownPressed: { applicationList.currentIndex = Math.min(applicationList.count - 1, applicationList.currentIndex + 1) }
+                    Keys.onUpPressed: { applicationList.currentIndex = Math.max(0, applicationList.currentIndex - 1) }
+                    onAccepted: {
+                        if (applicationList.currentItem) {
+                            applicationModel.launch(applicationList.currentItem.storageId)
+                            launcher.visible = false
+                        }
+                    }
+                    Keys.onEscapePressed: launcher.visible = false
                 }
             }
         }

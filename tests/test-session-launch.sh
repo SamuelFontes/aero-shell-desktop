@@ -30,6 +30,7 @@ mkdir -p "$TEMP_ROOT/bin" "$TEMP_ROOT/runtime" "$TEMP_ROOT/prefix with spaces/li
     "$TEMP_ROOT/home with spaces"
 cp "$ROOT/assets/defaults/kwinrc" "$TEMP_ROOT/prefix with spaces/share/aeroshell/defaults/kwinrc"
 cp "$ROOT/assets/defaults/kscreenlockerrc" "$TEMP_ROOT/prefix with spaces/share/aeroshell/defaults/kscreenlockerrc"
+cp "$ROOT/assets/defaults/kglobalshortcutsrc" "$TEMP_ROOT/prefix with spaces/share/aeroshell/defaults/kglobalshortcutsrc"
 cp "$ROOT/assets/defaults/kdeglobals" "$TEMP_ROOT/prefix with spaces/share/aeroshell/defaults/kdeglobals"
 cp "$ROOT/assets/qtquickcontrols2.conf" "$TEMP_ROOT/prefix with spaces/share/aeroshell/qtquickcontrols2.conf"
 cp "$ROOT/assets/plasma/shells/org.aeroshell.desktop/metadata.json" \
@@ -139,7 +140,7 @@ assert_file_line "$TEMP_ROOT/kwin-env" 13 "$AEROSHELL_PREFIX/share/aeroshell/fon
 assert_file_line "$TEMP_ROOT/kwin-env" 14 "$AEROSHELL_PREFIX/share/aeroshell/qtquickcontrols2.conf"
 assert_file_line "$TEMP_ROOT/kwin-env" 15 "aero-drop"
 assert_file_line "$TEMP_ROOT/kwin-env" 16 "$AEROSHELL_PREFIX/share/aeroshell/cursors:/usr/share/icons"
-assert_file_line "$TEMP_ROOT/kwin-env" 17 "24"
+assert_file_line "$TEMP_ROOT/kwin-env" 17 "32"
 assert_file_line "$TEMP_ROOT/kwin-env" 18 "org.aeroshell.desktop"
 
 for profile_path in \
@@ -160,10 +161,12 @@ rg -q '^Theme=Windows 7 Aero$' "$XDG_CONFIG_HOME/aeroshell/kwin/config/kdeglobal
 rg -q '^font=Noto Sans,' "$XDG_CONFIG_HOME/aeroshell/kwin/config/kdeglobals" \
     || fail "the compositor/greeter profile did not select Noto Sans"
 
-printf 'keep this AeroShell customization\n' > "$XDG_CONFIG_HOME/aeroshell/kwin/config/kwinrc"
+printf '[Custom]\nSentinel=keep this AeroShell customization\n' > "$XDG_CONFIG_HOME/aeroshell/kwin/config/kwinrc"
 printf 'keep this lock-screen customization\n' > "$XDG_CONFIG_HOME/aeroshell/kwin/config/kscreenlockerrc"
 bash "$ROOT/session/aeroshell-session-wayland"
-assert_equal 'keep this AeroShell customization' "$(cat "$XDG_CONFIG_HOME/aeroshell/kwin/config/kwinrc")" "second launch preserves KWin profile data"
+rg -q '^Sentinel=keep this AeroShell customization$' "$XDG_CONFIG_HOME/aeroshell/kwin/config/kwinrc" || fail 'second launch lost KWin custom settings'
+rg -q '^cursorSize=32$' "$XDG_CONFIG_HOME/aeroshell/kwin/config/kcminputrc" || fail 'compositor cursor size is inconsistent'
+rg -q '^aeroshell-shortcutsEnabled=true$' "$XDG_CONFIG_HOME/aeroshell/kwin/config/kwinrc" || fail 'existing profiles do not enable shortcuts'
 assert_equal 'keep this lock-screen customization' "$(cat "$XDG_CONFIG_HOME/aeroshell/kwin/config/kscreenlockerrc")" "second launch preserves lock-screen settings"
 
 export XDG_CONFIG_HOME="$TEMP_ROOT/already-aeroshell"

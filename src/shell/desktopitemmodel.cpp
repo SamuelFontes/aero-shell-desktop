@@ -9,6 +9,8 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QMimeDatabase>
+#include <QProcess>
+#include <QCoreApplication>
 #include <QStandardPaths>
 
 DesktopItemModel::DesktopItemModel(QObject *parent)
@@ -54,11 +56,22 @@ QHash<int, QByteArray> DesktopItemModel::roleNames() const
 
 void DesktopItemModel::open(const QUrl &url)
 {
+    if (url.scheme() == QLatin1String("trash")) {
+        const auto explorer = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("aeroshell-explorer"));
+        if (!QProcess::startDetached(explorer, {QStringLiteral("--recycle-bin")})) Q_EMIT openFailed(tr("Recycle Bin"), tr("Could not open Recycle Bin."));
+        return;
+    }
     if (!url.isLocalFile() || !QFileInfo::exists(url.toLocalFile())) {
         return;
     }
 
     const QFileInfo file(url.toLocalFile());
+    if (file.isDir()) {
+        const QString explorer = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("aeroshell-explorer"));
+        if (!QProcess::startDetached(explorer, {file.absoluteFilePath()}))
+            Q_EMIT openFailed(file.fileName(), tr("AeroShell Explorer could not be started."));
+        return;
+    }
     if (file.suffix().compare(QStringLiteral("desktop"), Qt::CaseInsensitive) == 0) {
         const KService::Ptr service = KService::serviceByDesktopPath(file.absoluteFilePath());
         if (!service || !service->isApplication() || service->noDisplay()) {
@@ -95,7 +108,8 @@ void DesktopItemModel::reload()
             m_watcher.addPath(parentDirectory);
         }
         beginResetModel();
-        m_entries.clear();
+        m_entries = {{tr("Computer"), QUrl::fromLocalFile(QStringLiteral("/")), QStringLiteral("computer")},
+                     {tr("Recycle Bin"), QUrl(QStringLiteral("trash:/")), QStringLiteral("user-trash")}};
         endResetModel();
         return;
     }
@@ -114,7 +128,8 @@ void DesktopItemModel::reload()
     const QFileInfoList files = desktopDir.entryInfoList(QDir::AllEntries | QDir::NoDotAndDotDot | QDir::Readable,
                                                         QDir::DirsFirst | QDir::Name | QDir::IgnoreCase);
     QMimeDatabase mimeDatabase;
-    QVector<Entry> entries;
+    QVector<Entry> entries{{tr("Computer"), QUrl::fromLocalFile(QStringLiteral("/")), QStringLiteral("computer")},
+                           {tr("Recycle Bin"), QUrl(QStringLiteral("trash:/")), QStringLiteral("user-trash")}};
     entries.reserve(files.size());
     for (const QFileInfo &file : files) {
         if (file.isHidden()) {
@@ -128,4 +143,16 @@ void DesktopItemModel::reload()
     beginResetModel();
     m_entries = std::move(entries);
     endResetModel();
+}
+
+void DesktopItemModel::newFolder()
+{
+    if (!QDir().mkpath(m_desktopDirectory)) {
+        Q_EMIT openFailed(tr("Desktop"), tr("The Desktop folder could not be created.")); return;
+    }
+    QDir desktop(m_desktopDirectory);
+    QString name = tr("New folder");
+    for (int suffix = 2; desktop.exists(name); ++suffix) name = tr("New folder (%1)").arg(suffix);
+    if (!desktop.mkdir(name)) Q_EMIT openFailed(name, tr("The folder could not be created."));
+    reload();
 }

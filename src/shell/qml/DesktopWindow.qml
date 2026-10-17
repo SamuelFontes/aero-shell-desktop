@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 import QtQuick
 import QtQuick.Window
+import QtQuick.Controls
 
 Window {
     id: desktop
@@ -9,8 +10,10 @@ Window {
     property url selectedWallpaperUrl
 
     screen: targetScreen
-    x: targetScreen ? targetScreen.virtualX : 0
-    y: targetScreen ? targetScreen.virtualY : 0
+    readonly property real desiredX: targetScreen ? targetScreen.virtualX : 0
+    readonly property real desiredY: targetScreen ? targetScreen.virtualY : 0
+    x: desiredX
+    y: desiredY
     width: targetScreen ? targetScreen.width : 1280
     height: targetScreen ? targetScreen.height : 720
     visible: false
@@ -18,12 +21,12 @@ Window {
     flags: Qt.FramelessWindowHint | Qt.WindowDoesNotAcceptFocus
     title: "AeroShell Desktop"
 
-    onXChanged: shellBridge.setSurfacePosition(desktop, Qt.point(x, y))
-    onYChanged: shellBridge.setSurfacePosition(desktop, Qt.point(x, y))
+    onDesiredXChanged: shellBridge.setSurfacePosition(desktop, Qt.point(desiredX, desiredY))
+    onDesiredYChanged: shellBridge.setSurfacePosition(desktop, Qt.point(desiredX, desiredY))
 
     Component.onCompleted: {
         shellBridge.registerSurface(desktop, "desktop")
-        shellBridge.setSurfacePosition(desktop, Qt.point(x, y))
+        shellBridge.setSurfacePosition(desktop, Qt.point(desiredX, desiredY))
         refreshWallpaper()
     }
 
@@ -48,6 +51,20 @@ Window {
             visible: status === Image.Ready
         }
 
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.RightButton
+        onClicked: desktopMenu.popup()
+    }
+    Menu {
+        id: desktopMenu
+        popupType: Popup.Window
+        MenuItem { text: "Refresh"; onTriggered: desktopItemModel.refresh() }
+        MenuItem { text: "New folder"; onTriggered: desktopItemModel.newFolder() }
+        MenuSeparator {}
+        MenuItem { text: "Open Desktop in Explorer"; onTriggered: applicationModel.openLocation("desktop") }
+        MenuItem { text: "Personalize"; onTriggered: shellActions.dispatch("settings") }
+    }
     GridView {
         id: desktopItems
         anchors.top: parent.top

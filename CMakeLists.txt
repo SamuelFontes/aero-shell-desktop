@@ -19,7 +19,7 @@ foreach(directory_var IN ITEMS CMAKE_INSTALL_BINDIR CMAKE_INSTALL_LIBEXECDIR)
     endif()
 endforeach()
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core DBus Gui Qml Quick QuickControls2)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core DBus Gui Widgets Qml Quick QuickControls2)
 find_package(KF6KIO REQUIRED)
 find_package(KF6Service REQUIRED)
 find_package(KWayland REQUIRED)
@@ -29,6 +29,9 @@ qt_standard_project_setup(REQUIRES 6.8)
 
 qt_add_executable(aeroshell-shell
     src/shell/main.cpp
+    src/shell/shellactions.h
+    src/shell/taskbarmodel.cpp
+    src/shell/taskbarmodel.h
     src/shell/audiocontrol.cpp
     src/shell/audiocontrol.h
     src/shell/batterystatus.cpp
@@ -75,6 +78,8 @@ qt_add_qml_module(aeroshell-shell
         src/shell/qml/LauncherWindow.qml
         src/shell/qml/SettingsWindow.qml
         src/shell/qml/PolkitAuthWindow.qml
+        src/shell/qml/RunWindow.qml
+        src/shell/qml/SecurityWindow.qml
 )
 
 target_link_libraries(aeroshell-shell PRIVATE
@@ -91,6 +96,12 @@ target_link_libraries(aeroshell-shell PRIVATE
     PolkitQt6-1::Core
 )
 
+qt_add_executable(aeroshell-explorer src/explorer/main.cpp src/explorer/explorer.cpp src/explorer/explorer.h src/explorer/taskmanager.cpp src/explorer/taskmanager.h src/explorer/recyclebin.cpp src/explorer/recyclebin.h)
+target_link_libraries(aeroshell-explorer PRIVATE Qt6::Widgets KF6::KIOWidgets)
+install(TARGETS aeroshell-explorer RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES session/aeroshell-mimeapps.list DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+install(FILES session/org.aeroshell.explorer.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+
 install(TARGETS aeroshell-shell RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(DIRECTORY assets/ DESTINATION ${CMAKE_INSTALL_DATADIR}/aeroshell PATTERN "plasma" EXCLUDE)
 install(DIRECTORY assets/plasma/ DESTINATION ${CMAKE_INSTALL_DATADIR}/plasma)
@@ -105,6 +116,17 @@ install(FILES packaging/aeroshell-portals.conf DESTINATION /usr/share/xdg-deskto
 
 if(BUILD_TESTING)
     find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    add_executable(test-taskbar tests/test-taskbar.cpp src/shell/taskbarmodel.cpp src/shell/taskbarmodel.h src/shell/applicationmodel.cpp src/shell/applicationmodel.h)
+    target_link_libraries(test-taskbar PRIVATE Qt6::Gui KF6::KIOGui KF6::Service Plasma::KWaylandClient)
+    add_test(NAME taskbar COMMAND test-taskbar)
+    add_executable(test-keyboard-status tests/test-keyboard-status.cpp src/shell/keyboardlayoutstatus.cpp src/shell/keyboardlayoutstatus.h)
+    target_link_libraries(test-keyboard-status PRIVATE Qt6::Core Qt6::DBus)
+    add_test(NAME keyboard-status COMMAND dbus-run-session -- $<TARGET_FILE:test-keyboard-status>)
+    set_tests_properties(keyboard-status PROPERTIES TIMEOUT 10)
+    add_executable(test-explorer tests/test-explorer.cpp src/explorer/explorer.cpp src/explorer/explorer.h)
+    target_link_libraries(test-explorer PRIVATE Qt6::Widgets KF6::KIOWidgets)
+    add_test(NAME explorer COMMAND dbus-run-session -- $<TARGET_FILE:test-explorer>)
+    set_tests_properties(explorer PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
     add_executable(test-audio-control
         tests/test-audio-control.cpp

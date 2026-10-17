@@ -22,7 +22,10 @@ QList<KeyboardLayoutStatus::Layout> parseLayouts(const QVariant &value)
         return layouts;
     }
 
-    QDBusArgument argument = value.value<QDBusArgument>();
+    const QDBusArgument argument = value.value<QDBusArgument>();
+    // The const overloads read; the non-const overloads attempt to marshal and
+    // never advance the incoming iterator, hanging startup on a live KWin bus.
+    if (argument.currentSignature() != QLatin1String("a(sss)")) return layouts;
     argument.beginArray();
     while (!argument.atEnd()) {
         KeyboardLayoutStatus::Layout layout;
@@ -54,8 +57,8 @@ KeyboardLayoutStatus::KeyboardLayoutStatus(QObject *parent)
             });
     QDBusConnection::sessionBus().connect(QString(), QString::fromLatin1(keyboardPath),
                                           QString::fromLatin1(keyboardInterface),
-                                          QStringLiteral("currentLayoutChanged"), this,
-                                          SLOT(onLayoutChanged(QString)));
+                                          QStringLiteral("layoutChanged"), this,
+                                          SLOT(onLayoutChanged(uint)));
     QDBusConnection::sessionBus().connect(QString(), QString::fromLatin1(keyboardPath),
                                           QString::fromLatin1(keyboardInterface),
                                           QStringLiteral("layoutListChanged"), this,
@@ -144,7 +147,7 @@ void KeyboardLayoutStatus::refresh()
     Q_EMIT changed();
 }
 
-void KeyboardLayoutStatus::onLayoutChanged(const QString &)
+void KeyboardLayoutStatus::onLayoutChanged(uint)
 {
     refresh();
 }

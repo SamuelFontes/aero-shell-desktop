@@ -1,5 +1,5 @@
 [org.kde.kdecoration2]
-ButtonsOnLeft=MS
+ButtonsOnLeft=M
 ButtonsOnRight=IAX
 library=org.kde.kwin.aurorae.v2
 theme=__aurorae__svg__Se7enAero
@@ -7,3 +7,16 @@ theme=__aurorae__svg__Se7enAero
 [Plugins]
 blurEnabled=true
 glideEnabled=true
+
+aeroshell-shortcutsEnabled=true
+
+[ModifierOnlyShortcuts]
+Meta=org.aeroshell.Shell,/Shell,org.aeroshell.Shell,toggleLauncher
+
+[Windows]
+ElectricBorderMaximize=true
+ElectricBorderTiling=true
+BorderlessMaximizedWindows=false
+
+[MouseBindings]
+CommandAllKey=Alt

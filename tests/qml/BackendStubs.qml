@@ -98,6 +98,7 @@ QtObject {
         function registerSurface(window, role) {}
         function setSurfacePosition(window, position) {}
     }
+    property QtObject shellActions: QtObject { signal actionRequested(string action) }
     property QtObject screenEvents: QtObject { signal screensChanged() }
     property QtObject shellSounds: QtObject { function play(event) {} }
 }

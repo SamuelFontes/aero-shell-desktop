@@ -2,13 +2,13 @@
 
 AeroShell is an independent Wayland desktop environment whose default desktop is the complete AeroThemePlasma appearance, adapted to AeroShell's own shell and isolated from KDE Plasma. The first release targets Arch Linux and Manjaro and must coexist with an existing KDE Plasma installation.
 
-**Project status: implementation and validation are in progress. AeroThemePlasma is the required first-login appearance, never an optional theme. The session automatically selects the full Windows 7 Aero icon theme, Aero cursor, Noto Sans, wallpaper, GTK style, sound theme, lock-screen appearance, and supported panel widgets. The shell includes native login/logout and notification sounds; GTK 3 event sounds use the same bundled theme. A local unpublished Manjaro package now builds, but it has not been installed or boot-tested. A real Wayland login and Qt/KDE application styling and sound behavior are not yet validated.** Asset-rights verification is not a completion gate per user direction; upstream source pinning remains incomplete.
+**Project status: desktop repairs are implemented and under final validation. The shell now reaches a real virtual KWin desktop with a correctly positioned taskbar, grouped application buttons, Windows 7 cursor defaults, native Explorer, Recycle Bin, Task Manager, Run and session-wide Windows shortcuts. See the [repair report](docs/validation/windows7-desktop.md) and [shortcut table](docs/windows7-shortcuts.md). A virtual compositor test is not a completed display-manager login or proof of complete Windows 7 parity. Hardware, authentication and the remaining parity gaps are tracked in the report.**
 
 AeroShell must keep its desktop settings, processes, and services separate from Plasma. The project registers a standard Wayland session entry; display-manager configuration and login-screen themes remain user-managed. See [plan.md](plan.md) for requirements, task order, evidence rules, and acceptance criteria.
 
 ## Development status
 
-The latest [preflight review](docs/validation/preflight-review.md) records the startup/integration fixes, eleven passing CTests, offscreen desktop/popover rendering, automatic Aero lock-screen package selection on this host, and the rebuilt local package. A real Wayland login and authentication test remain necessary.
+The [Windows 7 repair report](docs/validation/windows7-desktop.md) supersedes the earlier startup findings. The earlier [preflight review](docs/validation/preflight-review.md) records the startup/integration fixes, eleven passing CTests, offscreen desktop/popover rendering, automatic Aero lock-screen package selection on this host, and the rebuilt local package. A real Wayland login and authentication test remain necessary.
 
 Task progress and evidence are tracked in [docs/tasks.md](docs/tasks.md). The required first-login composition and active defaults are in [docs/default-appearance.md](docs/default-appearance.md). Upstream source pins and install behavior remain tracked independently from asset-rights verification.
 
@@ -28,3 +28,6 @@ python scripts/audit-install-manifests.py --stage-root stage --print-manifest
 ```
 
 The current implementation and validation gaps are tracked in [docs/tasks.md](docs/tasks.md) and [docs/validation/shell-build.md](docs/validation/shell-build.md).
+
+
+To build a package from the current workspace (including local changes), run `scripts/build-local-package.sh`. To exercise a staged desktop without changing the active session, run `bash tests/test-wayland-session.sh build/integration-stage/opt/aeroshell build/wayland-verified` after staging. This creates an isolated virtual compositor and captures its desktop windows.

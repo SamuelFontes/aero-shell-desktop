@@ -1,0 +1,6 @@
+{
+    "KPackageStructure": "KWin/Script",
+    "KPlugin": {"Id": "aeroshell-shortcuts", "Name": "AeroShell Windows 7 shortcuts", "Version": "1.0", "License": "MIT"},
+    "X-Plasma-API": "javascript",
+    "X-Plasma-MainScript": "code/main.js"
+}

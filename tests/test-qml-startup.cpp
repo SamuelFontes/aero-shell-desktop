@@ -167,6 +167,16 @@ int main(int argc, char **argv)
                         << (desktop ? desktop->geometry() : QRect()) << (panel ? panel->geometry() : QRect());
             return 1;
         }
+        // A real Wayland toplevel is told (0,0), independent of the panel's
+        // global compositor position. This must not move Start above the output.
+        panel->setPosition(0, 0);
+        if (panel->property("desiredY").toInt() != geometry.bottom() + 1 - 48
+            || bundle.property(QStringLiteral("launcher")).toQObject()->property("desiredY").toInt()
+                != geometry.bottom() + 1 - 48 - bundle.property(QStringLiteral("launcher")).toQObject()->property("height").toInt() - 6) {
+            qCritical("Compositor-local coordinates corrupted shell placement.");
+            return 1;
+        }
+        panel->setPosition(geometry.x(), geometry.bottom() + 1 - 48);
         if (argc == 2) {
             const QDir output(QString::fromLocal8Bit(argv[1]));
             if (!output.mkpath(QStringLiteral("."))) {

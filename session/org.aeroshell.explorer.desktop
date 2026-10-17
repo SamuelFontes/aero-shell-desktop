@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Windows Explorer
+Comment=Browse files and folders
+Exec=/opt/aeroshell/bin/aeroshell-explorer %u
+Icon=system-file-manager
+Terminal=false
+Categories=System;FileTools;FileManager;
+MimeType=inode/directory;
+NoDisplay=true
+StartupNotify=true

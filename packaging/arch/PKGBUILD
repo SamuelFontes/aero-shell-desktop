@@ -23,6 +23,9 @@ depends=(
   'qt6-multimedia'
   'kio'
   'kservice'
+  'kconfig'
+  'konsole'
+  'spectacle'
   'kwayland>=6.7.4'
   'kwayland<6.7.5'
   'polkit-qt6'
@@ -64,6 +67,7 @@ check() {
     assets/plasma/shells/org.aeroshell.desktop/contents/lockscreen/*.qml
   desktop-file-validate session/aeroshell.desktop
   desktop-file-validate session/org.aeroshell.shell.desktop
+  desktop-file-validate session/org.aeroshell.explorer.desktop
   ctest --test-dir build --output-on-failure
   python tests/test-install-policy.py
   python tests/test-source-lock.py

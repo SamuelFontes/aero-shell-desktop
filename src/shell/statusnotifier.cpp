@@ -48,7 +48,8 @@ QString iconPixmapDataUrl(const QVariant &value)
         return {};
     }
 
-    QDBusArgument argument = unpacked.value<QDBusArgument>();
+    const QDBusArgument argument = unpacked.value<QDBusArgument>();
+    if (argument.currentSignature() != QLatin1String("a(iiay)")) return {};
     int bestArea = 0;
     QImage bestImage;
     argument.beginArray();

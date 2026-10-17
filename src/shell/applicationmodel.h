@@ -32,6 +32,7 @@ public:
 
     Q_INVOKABLE void launch(const QString &storageId);
     Q_INVOKABLE void openHome();
+    Q_INVOKABLE bool run(const QString &command);
     Q_INVOKABLE bool locationAvailable(const QString &location) const;
     Q_INVOKABLE void openLocation(const QString &location);
 

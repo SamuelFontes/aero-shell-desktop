@@ -54,7 +54,8 @@ bool readLayoutNode(const QVariant &value, int *id, QVariantMap *properties, QVa
         return false;
     }
 
-    QDBusArgument argument = unwrapped.value<QDBusArgument>();
+    const QDBusArgument argument = unwrapped.value<QDBusArgument>();
+    if (argument.currentSignature() != QLatin1String("(ia{sv}av)")) return false;
     argument.beginStructure();
     argument >> *id;
     argument >> *properties;

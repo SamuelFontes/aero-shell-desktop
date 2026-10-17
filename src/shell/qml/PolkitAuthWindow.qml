@@ -17,23 +17,25 @@ Window {
     title: "AeroShell Authentication"
     width: 500
     height: sessionStarted ? 330 : 290
-    x: targetScreen ? targetScreen.virtualX + Math.round((targetScreen.width - width) / 2) : 100
-    y: targetScreen ? targetScreen.virtualY + Math.round((targetScreen.height - height) / 2) : 100
+    readonly property real desiredX: targetScreen ? targetScreen.virtualX + Math.round((targetScreen.width - width) / 2) : 100
+    readonly property real desiredY: targetScreen ? targetScreen.virtualY + Math.round((targetScreen.height - height) / 2) : 100
+    x: desiredX
+    y: desiredY
     color: "transparent"
     visible: polkitAgentModel.authenticationActive
 
-    onXChanged: shellBridge.setSurfacePosition(authWindow, Qt.point(x, y))
-    onYChanged: shellBridge.setSurfacePosition(authWindow, Qt.point(x, y))
+    onDesiredXChanged: shellBridge.setSurfacePosition(authWindow, Qt.point(desiredX, desiredY))
+    onDesiredYChanged: shellBridge.setSurfacePosition(authWindow, Qt.point(desiredX, desiredY))
 
     Component.onCompleted: {
         shellBridge.registerSurface(authWindow, "popup")
-        shellBridge.setSurfacePosition(authWindow, Qt.point(x, y))
+        shellBridge.setSurfacePosition(authWindow, Qt.point(desiredX, desiredY))
     }
     onVisibleChanged: {
         if (visible) {
             sessionStarted = false
             passwordField.clear()
-            shellBridge.setSurfacePosition(authWindow, Qt.point(x, y))
+            shellBridge.setSurfacePosition(authWindow, Qt.point(desiredX, desiredY))
             requestActivate()
         }
     }

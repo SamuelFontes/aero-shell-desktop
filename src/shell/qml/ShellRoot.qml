@@ -8,6 +8,11 @@ Item {
     property var screenBundles: []
     property var settingsWindow: null
     property var authWindow: null
+    property var runWindow: null
+    property var securityWindow: null
+    Component { id: securityComponent; SecurityWindow {} }
+
+    Component { id: runComponent; RunWindow {} }
 
     Component {
         id: desktopComponent
@@ -57,6 +62,8 @@ Item {
         if (!targetScreen || findBundle(targetScreen))
             return
 
+        if (!securityWindow) securityWindow = securityComponent.createObject(null, { targetScreen })
+        if (!runWindow) runWindow = runComponent.createObject(null, { targetScreen })
         if (!settingsWindow) {
             settingsWindow = settingsComponent.createObject(null, { targetScreen })
         }
@@ -142,6 +149,31 @@ Item {
         }
         ensureAuthenticationWindow()
         updateWindowReferences()
+    }
+
+    Connections {
+        target: shellActions
+        function onActionRequested(action) {
+            const bundle = shell.findBundle(Qt.application.screens[0])
+            if (!bundle) return
+            if (action === "start") bundle.panel.toggleLauncher()
+            else if (action === "explorer") applicationModel.openLocation("home")
+            else if (action === "security") { securityWindow.showFullScreen(); securityWindow.requestActivate() }
+            else if (action === "dismiss") {
+                runWindow.hide()
+                securityWindow.hide()
+                for (const item of shell.screenBundles) item.launcher.hide()
+            }
+            else if (action === "file-search") applicationModel.run("explorer --search")
+            else if (action === "screenshot") applicationModel.run("spectacle -b -f -n -c")
+            else if (action === "window-screenshot") applicationModel.run("spectacle -b -a -n -c")
+            else if (action === "run") { runWindow.show(); runWindow.requestActivate() }
+            else if (action === "lock") screenLockController.requestLock()
+            else if (action === "task-manager") applicationModel.run("taskmgr")
+            else if (action === "settings") { settingsWindow.show(); settingsWindow.requestActivate() }
+            else if (action === "taskbar" || action === "tray") bundle.panel.focusTaskbar(action === "tray")
+            else if (action.startsWith("task:")) aeroWindowModel.requestActivate(Number(action.substring(5)) - 1)
+        }
     }
 
     Connections {

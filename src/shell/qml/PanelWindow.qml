@@ -14,6 +14,18 @@ Window {
     property string pendingNetworkSecurity: ""
     property var toastNotification: ({})
 
+    function toggleLauncher() {
+        if (!launcherWindow) return
+        launcherWindow.visible = !launcherWindow.visible
+        if (launcherWindow.visible) launcherWindow.requestActivate()
+    }
+
+    function focusTaskbar(tray) {
+        requestActivate()
+        if (tray) networkButton.forceActiveFocus()
+        else { tasks.currentIndex = tasks.activeFocus ? (tasks.currentIndex + 1) % Math.max(1, tasks.count) : 0; tasks.forceActiveFocus() }
+    }
+
     function showTrayMenu(button, serviceId, menuPath) {
         if (!menuPath.length) {
             const point = button.mapToGlobal(Qt.point(button.width / 2, button.height / 2))
@@ -28,20 +40,22 @@ Window {
     }
 
     screen: targetScreen
-    x: targetScreen ? targetScreen.virtualX : 0
-    y: targetScreen ? targetScreen.virtualY + targetScreen.height - panelHeight : 672
+    readonly property real desiredX: targetScreen ? targetScreen.virtualX : 0
+    readonly property real desiredY: targetScreen ? targetScreen.virtualY + targetScreen.height - panelHeight : 672
+    x: desiredX
+    y: desiredY
     width: targetScreen ? targetScreen.width : 1280
     height: panelHeight
     color: "transparent"
     flags: Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
     title: "AeroShell Panel"
 
-    onXChanged: shellBridge.setSurfacePosition(panel, Qt.point(x, y))
-    onYChanged: shellBridge.setSurfacePosition(panel, Qt.point(x, y))
+    onDesiredXChanged: shellBridge.setSurfacePosition(panel, Qt.point(desiredX, desiredY))
+    onDesiredYChanged: shellBridge.setSurfacePosition(panel, Qt.point(desiredX, desiredY))
 
     Component.onCompleted: {
         shellBridge.registerSurface(panel, "panel")
-        shellBridge.setSurfacePosition(panel, Qt.point(x, y))
+        shellBridge.setSurfacePosition(panel, Qt.point(desiredX, desiredY))
     }
 
     Rectangle {
@@ -56,13 +70,13 @@ Window {
         }
         border.color: "#d8ebff"
         border.width: 1
-        opacity: 0.97
+        opacity: 0.84
     }
 
     RowLayout {
         anchors.fill: parent
         anchors.leftMargin: 10
-        anchors.rightMargin: 12
+        anchors.rightMargin: 0
         spacing: 8
 
         Button {
@@ -70,20 +84,14 @@ Window {
             text: "Start"
             Layout.preferredWidth: 48
             Layout.fillHeight: true
-            onClicked: {
-                if (launcherWindow) {
-                    launcherWindow.visible = !launcherWindow.visible
-                    if (launcherWindow.visible)
-                        launcherWindow.requestActivate()
-                }
-            }
+            onClicked: panel.toggleLauncher()
             contentItem: Item {
                 Image {
                     id: startOrbIcon
                     anchors.centerIn: parent
                     width: 42
                     height: 42
-                    source: aeroThemeAssetsPath + "/widgets/aerothemeplasma-start-orb.png"
+                    source: "file://" + aeroThemeAssetsPath + "/widgets/aerothemeplasma-start-orb.png"
                     sourceClipRect: Qt.rect(0, startButton.down ? 108 : startButton.hovered ? 54 : 0, 54, 54)
                     sourceSize: Qt.size(54, 162)
                     fillMode: Image.PreserveAspectFit
@@ -114,6 +122,9 @@ Window {
             spacing: 5
             clip: true
             model: aeroWindowModel
+            keyNavigationEnabled: true
+            Keys.onReturnPressed: if (currentIndex >= 0) aeroWindowModel.requestActivate(currentIndex)
+            Keys.onEscapePressed: panel.contentItem.focus = false
             delegate: Button {
                 id: taskButton
                 required property var model
@@ -123,16 +134,38 @@ Window {
                 readonly property bool isMaximized: model.IsMaximized
                 readonly property bool isCloseable: model.IsCloseable
                 readonly property bool skipTaskbar: model.SkipTaskbar
+                readonly property int windowCount: model.WindowCount === undefined ? 1 : model.WindowCount
+                readonly property bool isPinned: model.IsPinned || false
                 required property int index
                 visible: !skipTaskbar
-                width: visible ? Math.min(190, Math.max(92, implicitWidth)) : 0
+                width: visible ? 58 : 0
                 height: 38
                 text: model.display
+                ToolTip.visible: hovered
+                ToolTip.text: text
                 onClicked: {
-                    if (isActive && !isMinimized)
+                    if (windowCount > 1) {
+                        groupMenu.windows = aeroWindowModel.windows(index)
+                        groupMenu.popup()
+                    } else if (isActive && !isMinimized)
                         aeroWindowModel.requestToggleMinimized(index)
                     else
                         aeroWindowModel.requestActivate(index)
+                }
+                Menu {
+                    id: groupMenu
+                    property var windows: []
+                    popupType: Popup.Window
+                    Instantiator {
+                        model: groupMenu.windows
+                        delegate: MenuItem {
+                            required property var modelData
+                            text: modelData.title
+                            onTriggered: aeroWindowModel.activateWindow(modelData.row)
+                        }
+                        onObjectAdded: (index, object) => groupMenu.insertItem(index, object)
+                        onObjectRemoved: (index, object) => groupMenu.removeItem(object)
+                    }
                 }
                 TapHandler {
                     acceptedButtons: Qt.RightButton
@@ -159,46 +192,37 @@ Window {
                 }
                 background: Rectangle {
                     radius: 4
-                    border.color: isActive ? "#c4e0ff" : "#71869d"
+                    border.color: tasks.activeFocus && tasks.currentIndex === index ? "white" : isActive ? "#c4e0ff" : windowCount ? "#71869d" : "transparent"
                     border.width: 1
                     gradient: Gradient {
-                        GradientStop { position: 0; color: isActive ? "#91bce6" : "#315e89" }
-                        GradientStop { position: 1; color: isActive ? "#2b74c7" : "#204876" }
+                        GradientStop { position: 0; color: isActive ? "#91bce6" : windowCount ? "#315e89" : "transparent" }
+                        GradientStop { position: 1; color: isActive ? "#2b74c7" : windowCount ? "#204876" : "transparent" }
                     }
                 }
-                contentItem: RowLayout {
-                    spacing: 6
+                contentItem: Item {
                     Image {
-                        Layout.preferredWidth: 20
-                        Layout.preferredHeight: 20
-                        source: appId.length ? `image://theme/${appId.replace(/\.desktop$/, "")}?v=${shellSettings.iconThemeRevision}` : ""
-                        sourceSize: Qt.size(width, height)
+                        anchors.centerIn: parent
+                        width: 32
+                        height: 32
+                        source: appId === "org.aeroshell.explorer" ? "image://theme/system-file-manager"
+                                : appId.length ? `image://theme/${appId.replace(/\.desktop$/, "")}?v=${shellSettings.iconThemeRevision}` : "image://theme/application-x-generic"
+                        sourceSize: Qt.size(32, 32)
                         fillMode: Image.PreserveAspectFit
-                        visible: status === Image.Ready
                     }
                     Text {
-                        Layout.fillWidth: true
-                        text: taskButton.text
-                        color: "#ffffff"
-                        elide: Text.ElideRight
-                        verticalAlignment: Text.AlignVCenter
-                        horizontalAlignment: Text.AlignLeft
-                        leftPadding: 4
-                        rightPadding: 4
-                        font.pixelSize: 12
+                        visible: taskButton.windowCount > 1
+                        anchors.right: parent.right
+                        anchors.bottom: parent.bottom
+                        text: taskButton.windowCount
+                        color: "white"
+                        style: Text.Outline
+                        styleColor: "#183c68"
+                        font.pixelSize: 10
                     }
                 }
             }
         }
 
-        Button {
-            text: shellBridge.showingDesktop ? "▢" : "▣"
-            Layout.preferredWidth: 38
-            Layout.fillHeight: true
-            onClicked: shellBridge.toggleShowDesktop()
-            ToolTip.visible: hovered
-            ToolTip.text: "Show desktop"
-        }
 
         Rectangle { Layout.fillHeight: true; width: 1; color: "#85a6cb"; opacity: 0.6 }
 
@@ -1063,7 +1087,7 @@ Window {
                     color: "#d8ebff"
                     font.pixelSize: 10
                     horizontalAlignment: Text.AlignRight
-                    text: Qt.formatDate(new Date(), "ddd, MMM d")
+                    text: Qt.formatDate(new Date(), "M/d/yyyy")
                 }
                 Timer {
                     interval: 15000
@@ -1071,7 +1095,7 @@ Window {
                     repeat: true
                     onTriggered: {
                         clockTime.text = Qt.formatTime(new Date(), "h:mm AP")
-                        clockDate.text = Qt.formatDate(new Date(), "ddd, MMM d")
+                        clockDate.text = Qt.formatDate(new Date(), "M/d/yyyy")
                     }
                 }
             }
@@ -1172,6 +1196,18 @@ Window {
                         }
                     }
                 }
+            }
+        }
+        Button {
+            id: showDesktopButton
+            Layout.preferredWidth: 14
+            Layout.fillHeight: true
+            onClicked: shellBridge.toggleShowDesktop()
+            ToolTip.visible: hovered
+            ToolTip.text: "Show desktop (Win+D)"
+            background: Rectangle {
+                border.color: "#8eacc9"
+                color: showDesktopButton.hovered ? "#80c5e6ff" : "#304c759f"
             }
         }
     }

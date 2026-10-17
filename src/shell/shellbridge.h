@@ -5,9 +5,12 @@
 #include <QHash>
 #include <QPointer>
 #include <QWindow>
+#include <QSet>
 
 namespace KWayland::Client {
 class ConnectionThread;
+class Blur;
+class BlurManager;
 class PlasmaShell;
 class PlasmaShellSurface;
 class PlasmaWindowManagement;
@@ -49,14 +52,18 @@ protected:
 private:
     KWayland::Client::ConnectionThread *m_connection = nullptr;
     KWayland::Client::Registry *m_registry = nullptr;
+    KWayland::Client::BlurManager *m_blurManager = nullptr;
+    QHash<QWindow *, QPointer<KWayland::Client::Blur>> m_blurs;
     KWayland::Client::PlasmaShell *m_plasmaShell = nullptr;
     KWayland::Client::PlasmaWindowManagement *m_windowManagement = nullptr;
     KWayland::Client::PlasmaWindowModel *m_windowModel = nullptr;
     bool m_ready = false;
+    QSet<QWindow *> m_attachingSurfaces;
     QHash<QWindow *, QString> m_windowRoles;
     QHash<QWindow *, QPoint> m_windowPositions;
     QHash<QWindow *, QPointer<KWayland::Client::PlasmaShellSurface>> m_shellSurfaces;
 
     void attachSurface(QWindow *window);
+    void attachBlur(QWindow *window);
     void attachPendingSurfaces();
 };

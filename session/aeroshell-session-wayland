@@ -62,6 +62,8 @@ install_prefix="${AEROSHELL_PREFIX:-/opt/aeroshell}"
 kwinrc_path="$profile_config/kwin/config/kwinrc"
 screenlockerrc_path="$profile_config/kwin/config/kscreenlockerrc"
 private_kdeglobals_path="$profile_config/kwin/config/kdeglobals"
+private_input_path="$profile_config/kwin/config/kcminputrc"
+private_shortcuts_path="$profile_config/kwin/config/kglobalshortcutsrc"
 default_kwinrc="$install_prefix/share/aeroshell/defaults/kwinrc"
 default_screenlockerrc="$install_prefix/share/aeroshell/defaults/kscreenlockerrc"
 default_kdeglobals="$install_prefix/share/aeroshell/defaults/kdeglobals"
@@ -79,7 +81,7 @@ lock_shell_dir="$install_prefix/share/plasma/shells/org.aeroshell.desktop"
     && -f "$lock_shell_dir/contents/lockscreen/LockScreenUi.qml" \
     && -f "$lock_shell_dir/contents/sounds/lockSuccess.ogg" ]] \
     || die "AeroShell's default lock-screen package is incomplete: $lock_shell_dir"
-for config_path in "$kwinrc_path" "$screenlockerrc_path" "$private_kdeglobals_path"; do
+for config_path in "$kwinrc_path" "$screenlockerrc_path" "$private_kdeglobals_path" "$private_input_path" "$private_shortcuts_path"; do
     [[ ! -L "$config_path" ]] || die "Refusing to use a symlinked AeroShell config: $config_path"
     [[ ! -e "$config_path" || -f "$config_path" ]] || die "AeroShell config path is not a regular file: $config_path"
     if [[ -e "$config_path" ]]; then
@@ -111,6 +113,23 @@ fi
 if [[ ! -e "$private_kdeglobals_path" ]]; then
     install -m 600 -- "$default_kdeglobals" "$private_kdeglobals_path" \
         || die "Cannot install AeroShell's private font/icon defaults: $private_kdeglobals_path"
+fi
+
+# Upgrade only AeroShell's private compositor profile, including existing users.
+command -v kwriteconfig6 >/dev/null && command -v kreadconfig6 >/dev/null || die 'KConfig tools are required to configure AeroShell.'
+cursor_size="${AEROSHELL_CURSOR_SIZE:-32}"
+[[ "$cursor_size" =~ ^[0-9]+$ && "$cursor_size" -ge 16 && "$cursor_size" -le 128 ]] \
+    || die 'AEROSHELL_CURSOR_SIZE must be between 16 and 128.'
+# Remove the old prototype's "all desktops" diamond from default title bars.
+if [[ "$(kreadconfig6 --file "$kwinrc_path" --group org.kde.kdecoration2 --key ButtonsOnLeft)" == MS ]]; then
+    kwriteconfig6 --file "$kwinrc_path" --group org.kde.kdecoration2 --key ButtonsOnLeft M
+fi
+kwriteconfig6 --file "$private_input_path" --group Mouse --key cursorTheme aero-drop
+kwriteconfig6 --file "$private_input_path" --group Mouse --key cursorSize "$cursor_size"
+kwriteconfig6 --file "$kwinrc_path" --group Plugins --key aeroshell-shortcutsEnabled true
+kwriteconfig6 --file "$kwinrc_path" --group ModifierOnlyShortcuts --key Meta 'org.aeroshell.Shell,/Shell,org.aeroshell.Shell,toggleLauncher'
+if [[ ! -e "$private_shortcuts_path" ]]; then
+    install -m 600 -- "$install_prefix/share/aeroshell/defaults/kglobalshortcutsrc" "$private_shortcuts_path"
 fi
 
 aero_data_dir="$install_prefix/share/aeroshell"
@@ -156,7 +175,7 @@ export FONTCONFIG_FILE="$aero_data_dir/fontconfig/fonts.conf"
 export QT_QUICK_CONTROLS_CONF="$qt_quick_controls_config"
 export XCURSOR_THEME="aero-drop"
 export XCURSOR_PATH="$current_cursor_paths"
-export XCURSOR_SIZE="${AEROSHELL_CURSOR_SIZE:-24}"
+export XCURSOR_SIZE="$cursor_size"
 
 # Give this desktop its own session bus. KDE and AeroShell can then register
 # independent KWin, notification, StatusNotifier, and portal-related names.
