@@ -1,0 +1,46 @@
+{
+  "panel-background.svg": {
+    "source": "plasma/desktoptheme/Seven-Black/widgets/panel-background.svg",
+    "sha256": "cbd64ab9fefa94fc999c06aa3aa47b2f4367e6d8c8ba278010e50c1dd3b2e210"
+  },
+  "taskbarhover.svg": {
+    "source": "plasma/desktoptheme/Seven-Black/widgets/taskbarhover.svg",
+    "sha256": "6df29b62fd58f94e7b8bfcb2e1308d54bee9628b49badf08ca7ef6848795350b"
+  },
+  "showdesktop.svg": {
+    "source": "plasma/plasmoids/io.gitgud.wackyideas.win7showdesktop/contents/ui/svgs/showdesktop.svg",
+    "sha256": "ddb5deb21db1ba196eace88acd288d8736c4599570f8b878ca7ccc580f6a577f"
+  },
+  "tasks.svg": {
+    "source": "plasma/plasmoids/io.gitgud.wackyideas.seventasks/contents/ui/svgs/tasks.svg",
+    "sha256": "d070cd1f74f8706f08d1d9bca99875371ec49ed60283ea45d5a129b75de184da"
+  },
+  "start-dialog.svgz": {
+    "source": "plasma/plasmoids/io.gitgud.wackyideas.SevenStart/contents/ui/svgs/dialog.svgz",
+    "sha256": "0968cec53b4c21262107abce6ee9381d98d4342cf30dc720280aeaa08f0d5b9a"
+  },
+  "start-background.svg": {
+    "source": "plasma/plasmoids/io.gitgud.wackyideas.SevenStart/contents/ui/svgs/background.svg",
+    "sha256": "e4aa0e4c16311f86839cf471f06547b6ab49fc2c1522422c147dfa64ddaca093"
+  },
+  "start-menuitem.svg": {
+    "source": "plasma/plasmoids/io.gitgud.wackyideas.SevenStart/contents/ui/svgs/menuitem.svg",
+    "sha256": "142dfff1215dcffee8acf4f8e9952abdf1849e329edacc7a64bafa70fe262939"
+  },
+  "start-sidebaritem.svg": {
+    "source": "plasma/plasmoids/io.gitgud.wackyideas.SevenStart/contents/ui/svgs/sidebaritem.svg",
+    "sha256": "6827f25a9c7af69d43c0611c0ba5c741693c33f37b030e5d8235eac5d56e73c8"
+  },
+  "start-lineedit.svg": {
+    "source": "plasma/plasmoids/io.gitgud.wackyideas.SevenStart/contents/ui/svgs/lineedit.svg",
+    "sha256": "2eadf0a7c844c4f82329c633aa50fb7cc69bc5c3667ac6dd402c70cfdeda1619"
+  },
+  "start-startmenu-buttons.svg": {
+    "source": "plasma/plasmoids/io.gitgud.wackyideas.SevenStart/contents/ui/svgs/startmenu-buttons.svg",
+    "sha256": "5661e3b0b93a14734f376b15a387c01dfcb029d6a9b798c8f7b27556116adc48"
+  },
+  "popup-background.svg": {
+    "source": "plasma/desktoptheme/Seven-Black/solid/dialogs/background.svg",
+    "sha256": "00bf9ddc46ab4874c2de13b6dc51e372adf29e6ff216cff2db6d2ba91b35b33b"
+  }
+}

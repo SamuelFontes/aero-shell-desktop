@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
+import org.kde.ksvg as KSvg
 
 Window {
     id: launcher
@@ -13,11 +14,11 @@ Window {
 
     screen: targetScreen
     transientParent: panelWindow
-    readonly property real desiredX: targetScreen ? targetScreen.virtualX + 10 : 10
-    readonly property real desiredY: targetScreen && panelWindow ? panelWindow.desiredY - height - 6 : 166
+    readonly property real desiredX: targetScreen ? targetScreen.virtualX : 0
+    readonly property real desiredY: targetScreen && panelWindow ? panelWindow.desiredY - height : 166
     x: desiredX
     y: desiredY
-    width: 462
+    width: 414
     height: Math.min(560, targetScreen ? targetScreen.height - 80 : 560)
     visible: false
     color: "transparent"
@@ -39,34 +40,40 @@ Window {
         }
     }
 
+    KSvg.FrameSvgItem {
+        anchors.fill: parent
+        imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/start-dialog.svgz"
+    }
+    // This overlay is the original SevenStart glass shading.
     Rectangle {
         anchors.fill: parent
+        anchors.margins: 2
         radius: 8
-        border.color: "#eaf4ff"
-        border.width: 1
         gradient: Gradient {
-            GradientStop { position: 0; color: "#ffffff" }
-            GradientStop { position: 0.12; color: "#d8e5f2" }
-            GradientStop { position: 1; color: "#477eb6" }
+            GradientStop { position: 0.0; color: "#26000000" }
+            GradientStop { position: 0.11; color: "#53000000" }
+            GradientStop { position: 0.2775; color: "#82000000" }
+            GradientStop { position: 0.445; color: "#99000000" }
+            GradientStop { position: 0.51; color: "#99000000" }
+            GradientStop { position: 0.84; color: "#4f000000" }
+            GradientStop { position: 1.0; color: "#00000000" }
         }
     }
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 10
-        spacing: 10
+        anchors.margins: 8
+        spacing: 5
 
-        Rectangle {
-            Layout.fillWidth: true
+        KSvg.FrameSvgItem {
+            Layout.preferredWidth: 254
             Layout.fillHeight: true
-            radius: 5
-            color: "#ffffff"
-            border.color: "#9bbde0"
+            imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/start-background.svg"
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 10
-                spacing: 8
+                anchors.margins: 4
+                spacing: 4
 
 
 
@@ -83,55 +90,33 @@ Window {
                         required property string comment
                         required property string iconName
                         width: applicationList.width
-                        height: 42
+                        height: 38
                         highlighted: ListView.isCurrentItem
                         onClicked: {
                             applicationModel.launch(storageId)
                             launcher.visible = false
                         }
+                        background: KSvg.FrameSvgItem {
+                            imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/start-menuitem.svg"
+                            prefix: "hover"
+                            visible: parent.hovered || parent.highlighted
+                        }
                         contentItem: RowLayout {
-                            spacing: 10
+                            spacing: 8
                             Image {
-                                id: appIcon
-                                width: 34
-                                height: 34
-                                source: iconName.length ? "image://theme/" + iconName + "?v=" + shellSettings.iconThemeRevision : ""
-                                sourceSize: Qt.size(width, height)
+                                Layout.preferredWidth: 32
+                                Layout.preferredHeight: 32
+                                source: "image://theme/" + (iconName.length ? iconName : "application-x-generic") + "?v=" + shellSettings.iconThemeRevision
+                                sourceSize: Qt.size(32, 32)
                                 fillMode: Image.PreserveAspectFit
-                                visible: status === Image.Ready
                             }
-                            Rectangle {
-                                width: 34
-                                height: 34
-                                radius: 6
-                                visible: !appIcon.visible
-                                border.color: "#d8ebff"
-                                gradient: Gradient {
-                                    GradientStop { position: 0; color: "#7fb2e2" }
-                                    GradientStop { position: 1; color: "#2b74c7" }
-                                }
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: name.length ? name.substring(0, 1).toUpperCase() : "•"
-                                    color: "white"
-                                    font.bold: true
-                                }
-                            }
-                            ColumnLayout {
-                                spacing: 1
+                            Text {
                                 Layout.fillWidth: true
-                                Text {
-                                    text: name
-                                    color: "#141312"
-                                    font.pixelSize: 13
-                                    elide: Text.ElideRight
-                                }
-                                Text {
-                                    text: comment
-                            color: "#596b7d"
-                                    font.pixelSize: 10
-                                    elide: Text.ElideRight
-                                }
+                                text: name
+                                color: "#141312"
+                                font.pixelSize: 12
+                                elide: Text.ElideRight
+                                verticalAlignment: Text.AlignVCenter
                             }
                         }
                     }
@@ -142,6 +127,11 @@ Window {
                     Layout.fillWidth: true
                     placeholderText: "Search programs"
                     selectByMouse: true
+                    Layout.preferredHeight: 25
+                    background: KSvg.FrameSvgItem {
+                        imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/start-lineedit.svg"
+                        prefix: "base"
+                    }
                     onTextChanged: { applicationModel.query = text; applicationList.currentIndex = 0 }
                     Keys.onDownPressed: { applicationList.currentIndex = Math.min(applicationList.count - 1, applicationList.currentIndex + 1) }
                     Keys.onUpPressed: { applicationList.currentIndex = Math.max(0, applicationList.currentIndex - 1) }
@@ -156,18 +146,13 @@ Window {
             }
         }
 
-        Rectangle {
-            Layout.preferredWidth: 144
+        Item {
+            Layout.fillWidth: true
             Layout.fillHeight: true
-            radius: 5
-            gradient: Gradient {
-                GradientStop { position: 0; color: "#345f8d" }
-                GradientStop { position: 1; color: "#183553" }
-            }
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 8
-                spacing: 6
+                spacing: 3
                 Text {
                     text: "AeroShell"
                     color: "#ffffff"
@@ -191,14 +176,23 @@ Window {
                         visible: modelData.location === "home" || modelData.location === "computer"
                                  || applicationModel.locationAvailable(modelData.location)
                         text: modelData.label
-                        icon.name: modelData.icon
-                        palette.button: "#2f5e8e"
+
+                        contentItem: Text {
+                        text: parent.text
+                        leftPadding: 8
+                        color: "white"
+                        font.pixelSize: 12
+                        font.weight: Font.Normal
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    palette.button: "#2f5e8e"
                         palette.buttonText: "#ffffff"
                         palette.highlight: "#72a9df"
                         palette.highlightedText: "#ffffff"
-                        background: Rectangle {
-                            radius: 3
-                            color: parent.down ? "#1b426e" : parent.hovered ? "#4e7dad" : "transparent"
+                        background: KSvg.FrameSvgItem {
+                            imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/start-sidebaritem.svg"
+                            prefix: "menuitem"
+                            visible: parent.hovered || parent.down || parent.activeFocus
                         }
                         onClicked: {
                             applicationModel.openLocation(modelData.location)
@@ -210,14 +204,23 @@ Window {
                 Button {
                     Layout.fillWidth: true
                     text: "Settings"
+                    contentItem: Text {
+                        text: parent.text
+                        leftPadding: 8
+                        color: "white"
+                        font.pixelSize: 12
+                        font.weight: Font.Normal
+                        verticalAlignment: Text.AlignVCenter
+                    }
                     palette.button: "#2f5e8e"
                     palette.buttonText: "#ffffff"
                     palette.highlight: "#72a9df"
                     palette.highlightedText: "#ffffff"
-                    background: Rectangle {
-                        radius: 3
-                        color: parent.down ? "#1b426e" : parent.hovered ? "#4e7dad" : "transparent"
-                    }
+                    background: KSvg.FrameSvgItem {
+                            imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/start-sidebaritem.svg"
+                            prefix: "menuitem"
+                            visible: parent.hovered || parent.down || parent.activeFocus
+                        }
                     onClicked: {
                         launcher.visible = false
                         if (settingsWindow) {
@@ -229,13 +232,21 @@ Window {
                 Button {
                     Layout.fillWidth: true
                     text: "Power…"
+                    contentItem: Text {
+                        text: parent.text
+                        leftPadding: 8
+                        color: "white"
+                        font.pixelSize: 12
+                        font.weight: Font.Normal
+                        verticalAlignment: Text.AlignVCenter
+                    }
                     palette.button: "#2f5e8e"
                     palette.buttonText: "#ffffff"
                     palette.highlight: "#72a9df"
                     palette.highlightedText: "#ffffff"
-                    background: Rectangle {
-                        radius: 3
-                        color: parent.down ? "#1b426e" : parent.hovered ? "#4e7dad" : "transparent"
+                    background: KSvg.FrameSvgItem {
+                        imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/start-startmenu-buttons.svg"
+                        prefix: parent.down ? "pressed" : parent.hovered ? "hover" : "normal"
                     }
                     onClicked: {
                         powerActions.clearError()
@@ -245,14 +256,23 @@ Window {
                 Button {
                     Layout.fillWidth: true
                     text: "Lock"
+                    contentItem: Text {
+                        text: parent.text
+                        leftPadding: 8
+                        color: "white"
+                        font.pixelSize: 12
+                        font.weight: Font.Normal
+                        verticalAlignment: Text.AlignVCenter
+                    }
                     palette.button: "#2f5e8e"
                     palette.buttonText: "#ffffff"
                     palette.highlight: "#72a9df"
                     palette.highlightedText: "#ffffff"
-                    background: Rectangle {
-                        radius: 3
-                        color: parent.down ? "#1b426e" : parent.hovered ? "#4e7dad" : "transparent"
-                    }
+                    background: KSvg.FrameSvgItem {
+                            imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/start-sidebaritem.svg"
+                            prefix: "menuitem"
+                            visible: parent.hovered || parent.down || parent.activeFocus
+                        }
                     onClicked: {
                         if (screenLockController.requestLock()) {
                             launcher.visible = false
@@ -273,14 +293,23 @@ Window {
                 Button {
                     Layout.fillWidth: true
                     text: "Log out"
+                    contentItem: Text {
+                        text: parent.text
+                        leftPadding: 8
+                        color: "white"
+                        font.pixelSize: 12
+                        font.weight: Font.Normal
+                        verticalAlignment: Text.AlignVCenter
+                    }
                     palette.button: "#2f5e8e"
                     palette.buttonText: "#ffffff"
                     palette.highlight: "#72a9df"
                     palette.highlightedText: "#ffffff"
-                    background: Rectangle {
-                        radius: 3
-                        color: parent.down ? "#1b426e" : parent.hovered ? "#4e7dad" : "transparent"
-                    }
+                    background: KSvg.FrameSvgItem {
+                            imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/start-sidebaritem.svg"
+                            prefix: "menuitem"
+                            visible: parent.hovered || parent.down || parent.activeFocus
+                        }
                     onClicked: shellBridge.requestLogout()
                 }
             }

@@ -1,4 +1,5 @@
 /* SPDX-License-Identifier: MIT */
+#include <KSvg/FrameSvg>
 #include <QFontDatabase>
 #include <QGuiApplication>
 #include <QIcon>
@@ -37,6 +38,16 @@ int main(int argc, char **argv)
         }
     }
 
+    // Original icons must win over shell fallback drawings at every UI size.
+    for (int pixels : {16, 22, 32, 48}) {
+        const QString path = assets + QStringLiteral("/icons/Windows 7 Aero/places/%1/folder-documents.png").arg(pixels);
+        const QImage expected = QIcon(path).pixmap(QSize(pixels, pixels)).toImage();
+        if (QIcon::fromTheme(QStringLiteral("folder-documents")).pixmap(QSize(pixels, pixels)).toImage() != expected) {
+            qCritical() << "A shell fallback replaced the original Aero folder icon at size" << pixels;
+            return 7;
+        }
+    }
+
     ThemeIconProvider iconProvider;
     QSize iconSize;
     for (const QString &name : {QStringLiteral("start-here"), QStringLiteral("network-wireless"), QStringLiteral("battery-full")}) {
@@ -50,6 +61,35 @@ int main(int argc, char **argv)
     if (iconProvider.requestPixmap(QStringLiteral("aero-test-icon-without-a-theme-entry"), &iconSize, QSize(32, 32)).isNull()) {
         std::fputs("Unknown application icons do not fall back to the Aero generic file icon.\n", stderr);
         return 3;
+    }
+
+    // Use the same renderer as the shell, so missing frame elements cannot
+    // silently leave the panel or a button transparent.
+    const QList<QPair<QString, QStringList>> frames{
+        {"panel-background.svg", {"south"}},
+        {"popup-background.svg", {""}},
+        {"tasks.svg", {"normal", "normal-hover", "active", "active-hover", "group", "group3", "active-group", "active-group3"}},
+        {"taskbarhover.svg", {"normal", "active"}},
+        {"showdesktop.svg", {"normal", "hover", "selected"}},
+        {"start-dialog.svgz", {""}},
+        {"start-background.svg", {""}},
+        {"start-menuitem.svg", {"hover"}},
+        {"start-sidebaritem.svg", {"menuitem"}},
+        {"start-lineedit.svg", {"base"}},
+        {"start-startmenu-buttons.svg", {"normal", "hover", "pressed"}},
+    };
+    for (const auto &[file, prefixes] : frames) {
+        KSvg::FrameSvg frame;
+        frame.setImagePath(assets + QStringLiteral("/widgets/aerothemeplasma/") + file);
+        for (const auto &prefix : prefixes) {
+            frame.setElementPrefix(prefix);
+            frame.resizeFrame(QSizeF(120, 48));
+            if (!frame.isValid() || !frame.hasElement(prefix.isEmpty() ? QStringLiteral("center") : prefix + QStringLiteral("-center"))
+                || frame.framePixmap().isNull()) {
+                qCritical() << "AeroThemePlasma frame failed to render:" << file << prefix;
+                return 6;
+            }
+        }
     }
 
     QImage wallpaper(assets + QStringLiteral("/wallpapers/aerothemeplasma-default.jpg"));

@@ -2,7 +2,9 @@
 
 AeroShell is an independent Wayland desktop environment whose default desktop is the complete AeroThemePlasma appearance, adapted to AeroShell's own shell and isolated from KDE Plasma. The first release targets Arch Linux and Manjaro and must coexist with an existing KDE Plasma installation.
 
-**Project status: desktop repairs are implemented and under final validation. The shell now reaches a real virtual KWin desktop with a correctly positioned taskbar, grouped application buttons, Windows 7 cursor defaults, native Explorer, Recycle Bin, Task Manager, Run and session-wide Windows shortcuts. See the [repair report](docs/validation/windows7-desktop.md) and [shortcut table](docs/windows7-shortcuts.md). A virtual compositor test is not a completed display-manager login or proof of complete Windows 7 parity. Hardware, authentication and the remaining parity gaps are tracked in the report.**
+**Project status: the taskbar and Start menu now render original AeroThemePlasma frames through KSvg, with its original Wayland Aero Glass effect hosted privately by KWin; see [the integration repair](docs/validation/aero-theme-integration.md).
+
+**Earlier desktop repair status: desktop repairs are implemented and under final validation. The shell now reaches a real virtual KWin desktop with a correctly positioned taskbar, grouped application buttons, Windows 7 cursor defaults, native Explorer, Recycle Bin, Task Manager, Run and session-wide Windows shortcuts. See the [repair report](docs/validation/windows7-desktop.md) and [shortcut table](docs/windows7-shortcuts.md). A virtual compositor test is not a completed display-manager login or proof of complete Windows 7 parity. Hardware, authentication and the remaining parity gaps are tracked in the report.**
 
 AeroShell must keep its desktop settings, processes, and services separate from Plasma. The project registers a standard Wayland session entry; display-manager configuration and login-screen themes remain user-managed. See [plan.md](plan.md) for requirements, task order, evidence rules, and acceptance criteria.
 

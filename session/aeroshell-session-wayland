@@ -127,6 +127,17 @@ fi
 kwriteconfig6 --file "$private_input_path" --group Mouse --key cursorTheme aero-drop
 kwriteconfig6 --file "$private_input_path" --group Mouse --key cursorSize "$cursor_size"
 kwriteconfig6 --file "$kwinrc_path" --group Plugins --key aeroshell-shortcutsEnabled true
+if [[ "$(kreadconfig6 --file "$kwinrc_path" --group AeroShell --key GlassIntegrationVersion --default 0)" == 0 ]]; then
+    kwriteconfig6 --file "$kwinrc_path" --group Plugins --key blurEnabled false
+    kwriteconfig6 --file "$kwinrc_path" --group Plugins --key aeroglassblurEnabled true
+    for preset in AeroHue=210 AeroSaturation=54 AeroBrightness=99 AeroIntensity=107; do
+        key="${preset%%=*}"
+        if [[ -z "$(kreadconfig6 --file "$kwinrc_path" --group Effect-aeroglassblur --key "$key" --default '')" ]]; then
+            kwriteconfig6 --file "$kwinrc_path" --group Effect-aeroglassblur --key "$key" "${preset#*=}"
+        fi
+    done
+    kwriteconfig6 --file "$kwinrc_path" --group AeroShell --key GlassIntegrationVersion 1
+fi
 kwriteconfig6 --file "$kwinrc_path" --group ModifierOnlyShortcuts --key Meta 'org.aeroshell.Shell,/Shell,org.aeroshell.Shell,toggleLauncher'
 if [[ ! -e "$private_shortcuts_path" ]]; then
     install -m 600 -- "$install_prefix/share/aeroshell/defaults/kglobalshortcutsrc" "$private_shortcuts_path"
@@ -164,6 +175,8 @@ export DESKTOP_SESSION="aeroshell"
 # this default inside KWin's private profile. No plasmashell process is run.
 export PLASMA_DEFAULT_SHELL="org.aeroshell.desktop"
 export XDG_DATA_DIRS="$current_data_dirs"
+# Only this compositor session can discover the bundled Aero Glass effect.
+export QT_PLUGIN_PATH="$install_prefix/lib/qt6/plugins${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}"
 export GTK_THEME="AeroShellAero"
 current_gtk_modules="${GTK_MODULES:-}"
 case ":$current_gtk_modules:" in

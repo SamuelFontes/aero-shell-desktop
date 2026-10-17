@@ -4,7 +4,7 @@ These assets are installed with AeroShell and selected automatically by the Wayl
 
 | Asset | Default behavior |
 |---|---|
-| `icons/Windows 7 Aero/` | Complete Windows 7 Aero icon theme, including the full installed icon tree plus AeroShell's scalable Start, application, folder, and status icons. AeroShell selects it in the shell process; GTK applications launched in the session also see the private asset path. Missing icons fall back to Adwaita/hicolor. |
+| `icons/Windows 7 Aero/` | Complete Windows 7 Aero icon theme, containing the original installed icon tree. AeroShell selects it in the shell process; GTK applications launched in the session also see the private asset path. Missing names first fall back to the separate `AeroShellFallback` theme, then Adwaita/hicolor; shell drawings cannot override original Aero icons. |
 | `cursors/aero-drop/` | Aero-style Xcursor theme selected for the Wayland session with `XCURSOR_THEME`, `XCURSOR_PATH`, and a default size of 24. The size can be overridden with `AEROSHELL_CURSOR_SIZE`. |
 | `wallpapers/aerothemeplasma-default.jpg` | AeroThemePlasma's default `Wallpaper1.jpg`, applied automatically to new AeroShell profiles and displays. The user may choose a different wallpaper afterward. |
 | `color-schemes/AeroColorScheme1.colors` | AeroThemePlasma's silver and Aero blue color scheme, loaded into AeroShell's Qt palette. |
@@ -21,3 +21,15 @@ The Windows 7 Aero icon theme and `aero-drop` cursor theme were copied from the 
 The default wallpaper, color scheme, Start orb, and lock-screen package were copied from the local AeroThemePlasma source snapshot into AeroShell's private data tree. They are selected automatically; no SDDM or KDE configuration is changed. Asset-rights verification is out of scope per user direction. The Noto Sans font comes from the declared `noto-fonts` runtime dependency. The panel, Start menu, desktop items, notification center, clock/calendar, task list, show-desktop action, audio, battery, network, keyboard-layout, and StatusNotifier controls are created by the shell automatically. The default widget mapping is recorded in `docs/default-appearance.md`.
 
 The Windows 7 sound theme was copied from the local `Windows-Sounds-for-Plasma` checkout at commit `926b5052ccb28cb8f97e26397e55e16ed1ede9e8`. AeroShell bundles it under its private data tree and does not install it into the shared system sound directory or change KDE's sound settings.
+
+`widgets/aerothemeplasma/` contains unmodified SVG artwork from the local AeroThemePlasma snapshot: Seven-Black's bottom panel, status hover and solid popup frames, SevenTasks' task/group states, SevenStart's glass frame, list/sidebar/search/power button frames, and the Show Desktop button. `sources.json` records each original path and SHA-256. The shell renders these directly through KSvg, using absolute private paths; it does not select or alter Plasma's active theme. The `ksvg` runtime dependency provides this renderer.
+
+The native Wayland Aero Glass effect is vendored in `src/effects/aeroglassblur`,
+with its source commit and integration changes recorded in `UPSTREAM.md`.
+It supplies the theme's blur, Sky tint, and reflection shaders. AeroShell loads
+it only through its private Qt plugin directory and private KWin profile, with
+the conflicting stock blur disabled. The Plasma color-KCM shared-memory bridge
+is removed. Shell surfaces request the current background-effect Wayland
+protocol through KWindowSystem, rather than the retired KWayland blur manager.
+The upstream repository license is retained in `LICENSES/` alongside file-level
+SPDX notices in the vendored source.

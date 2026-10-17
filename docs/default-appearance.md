@@ -10,13 +10,13 @@ The Wayland session is a separate desktop entry running AeroShell's Qt Quick she
 |---|---|---|
 | Wallpaper | AeroThemePlasma's `Wallpaper1.jpg` | Automatically selected for the desktop on each display unless the AeroShell profile already contains a user-selected wallpaper. |
 | Color scheme | AeroThemePlasma's `AeroColorScheme1.colors` | Loaded into AeroShell's Qt palette; GTK receives the matching light silver and Aero blue style. |
-| Icons | Complete `Windows 7 Aero` icon tree in `assets/icons/` | Selected within AeroShell; the full pack is bundled, along with scalable Start, application, folder, and status icons. Adwaita/hicolor supply names not present in the theme. |
+| Icons | Complete `Windows 7 Aero` icon tree and separate `AeroShellFallback` in `assets/icons/` | Selected within AeroShell; the full pack is bundled, along with scalable Start, application, folder, and status icons. Adwaita/hicolor supply names not present in the theme. |
 | Font | Noto Sans | Selected for AeroShell QML; session fontconfig gives it priority for child applications. The package declares `noto-fonts`. |
 | Qt Quick applications | Basic Controls style with AeroThemePlasma palette and Noto Sans | The session sets `QT_QUICK_CONTROLS_CONF` to the bundled config for child applications; applications that force their own style may override it. |
 | Cursor | `aero-drop` Xcursor theme | Selected for KWin and session applications with `XCURSOR_THEME=aero-drop`; default size is 24 and can be overridden with `AEROSHELL_CURSOR_SIZE`. |
 | GTK style | Private `AeroShellAero` CSS | Selected for session children through `GTK_THEME`; the session does not rewrite GTK configuration files. |
 | Window decoration | Bundled Se7en Aero Aurorae theme | Seeded into a private `kwinrc` on first login and loaded by the stock KWin Aurorae plugin. Existing AeroShell decoration preferences are preserved. |
-| Wayland effects | KWin blur and glide effects | Enabled in the private first-login KWin profile; visual effect availability and rendering still need a live Wayland check. |
+| Wayland effects | Original AeroThemePlasma Aero Glass effect and KWin glide | Enabled in the private first-login KWin profile; visual effect availability and rendering still need a live Wayland check. |
 | Lock screen | AeroThemePlasma-derived `org.aeroshell.desktop` KScreenLocker package | Selected in the private KScreenLocker config, with the Aero wallpaper, five-minute idle lock, password requirement, and lock-on-resume. The Start menu requests KWin's secure locker over AeroShell's private D-Bus and checks that it became active. |
 | Desktop | Wallpaper surface and XDG Desktop folder entries | Created for each display at shell startup; existing desktop files remain in the user's normal Desktop folder. |
 | Taskbar and Start menu | Aero glass panel, Start orb, app search/list, window tasks, show-desktop control, user-folder shortcuts, and confirmed suspend/restart/shutdown actions | Created by default. Task buttons support activation, minimize/restore, maximize/restore, and close; power actions are enabled only when logind reports them available. |
@@ -50,7 +50,7 @@ The built-in widgets listed by the local AeroThemePlasma snapshot are represente
 
 Hardware/service-dependent widgets stay in the default layout and degrade cleanly where their provider or device is absent. AeroShell provides the corresponding native implementations; installing these Plasma packages alone would not satisfy this mapping.
 
-The shell's palette, GTK styling, panel, Start menu, and widgets are native AeroShell components implementing the AeroThemePlasma desktop design. The installed icon pack, original theme wallpaper, font, and cursor are already selected. These are defaults, not optional theme packages or a future setup checklist.
+The shell uses native service/model adapters with the original AeroThemePlasma SVG frames for the panel, tasks, status hover states, popup chrome, SevenStart chrome, and Show Desktop button. KSvg renders the bundled files directly from AeroShell's private data path. The installed icon pack, original theme wallpaper, font, and cursor are already selected. These are defaults, not optional theme packages or a future setup checklist.
 
 ## Runtime isolation
 
@@ -69,3 +69,11 @@ The workspace contains a local AeroThemePlasma source snapshot and the user's in
 ## Checks
 
 `tests/test-default-appearance.py` asserts that the wallpaper, complete icon theme, cursor, Noto Sans, GTK styling, multi-display shell components, and default widgets are selected. `tests/test-session-launch.sh` checks the cursor, font, GTK, and private KWin environment. `tests/test-theme-assets.cpp` renders the core Aero icons and verifies the desktop wallpaper. Staged-manifest checks ensure integration remains within AeroShell-owned paths plus the session and portal registrations.
+
+The taskbar follows the upstream 40-pixel layout. The native Aero Glass plugin,
+its shaders and reflection textures are installed below
+`/opt/aeroshell/lib/qt6/plugins/kwin/effects/plugins`; that directory is added to
+Qt's lookup path only by the AeroShell session. Existing prototype profiles
+receive the effect and missing Sky-preset values once; existing tint values are
+preserved. The plugin reads the private KWin configuration, never Plasma's
+shared color-KCM memory.

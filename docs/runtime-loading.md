@@ -15,3 +15,11 @@ scripts/verify-library-loading.sh /opt/aeroshell/bin/aeroshell-shell <aeroshell-
 ```
 
 The staged-binary audit passes in the current Manjaro build environment. This does not prove plugin lookup paths, loaded process mappings, ordinary application behavior, or a nested compositor session; those require a real AeroShell Wayland session. The sandbox currently prevents its private D-Bus socket from binding, so no live process mapping or compositor evidence is available.
+
+AeroShell also builds AeroThemePlasma's original Wayland Aero Glass plugin against
+the distro's pinned KWin ABI. It is installed only below the private prefix and
+exposed to KWin by the AeroShell session's `QT_PLUGIN_PATH`. No system KWin plugin
+is replaced. The shell uses KF6 WindowSystem to negotiate
+`ext-background-effect-v1`. `aero-glass-plugin` checks factory metadata and actual
+library loading; the virtual Wayland test asserts that KWin reports
+`aeroglassblur` in its loaded effects and captures the composited glass.

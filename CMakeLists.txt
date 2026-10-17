@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(aeroshell-desktop VERSION 0.1.0 LANGUAGES CXX)
+project(aeroshell-desktop VERSION 0.1.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -22,10 +22,13 @@ endforeach()
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core DBus Gui Widgets Qml Quick QuickControls2)
 find_package(KF6KIO REQUIRED)
 find_package(KF6Service REQUIRED)
+find_package(KF6Svg REQUIRED)
+find_package(KF6WindowSystem REQUIRED)
 find_package(KWayland REQUIRED)
 find_package(PolkitQt6-1 REQUIRED)
 
 qt_standard_project_setup(REQUIRES 6.8)
+add_subdirectory(src/effects/aeroglassblur)
 
 qt_add_executable(aeroshell-shell
     src/shell/main.cpp
@@ -91,6 +94,7 @@ target_link_libraries(aeroshell-shell PRIVATE
     Qt6::QuickControls2
     KF6::KIOGui
     KF6::Service
+    KF6::WindowSystem
     Plasma::KWaylandClient
     PolkitQt6-1::Agent
     PolkitQt6-1::Core
@@ -116,6 +120,9 @@ install(FILES packaging/aeroshell-portals.conf DESTINATION /usr/share/xdg-deskto
 
 if(BUILD_TESTING)
     find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    add_executable(test-aero-glass-plugin tests/test-aero-glass-plugin.cpp)
+    target_link_libraries(test-aero-glass-plugin PRIVATE Qt6::Core)
+    add_test(NAME aero-glass-plugin COMMAND test-aero-glass-plugin $<TARGET_FILE:aeroglassblur>)
     add_executable(test-taskbar tests/test-taskbar.cpp src/shell/taskbarmodel.cpp src/shell/taskbarmodel.h src/shell/applicationmodel.cpp src/shell/applicationmodel.h)
     target_link_libraries(test-taskbar PRIVATE Qt6::Gui KF6::KIOGui KF6::Service Plasma::KWaylandClient)
     add_test(NAME taskbar COMMAND test-taskbar)
@@ -164,7 +171,7 @@ if(BUILD_TESTING)
         src/shell/themeiconprovider.cpp
         src/shell/themeiconprovider.h
     )
-    target_link_libraries(test-theme-assets PRIVATE Qt6::Gui Qt6::Quick)
+    target_link_libraries(test-theme-assets PRIVATE Qt6::Gui Qt6::Quick KF6::Svg)
     target_compile_definitions(test-theme-assets PRIVATE AEROSHELL_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     add_test(NAME theme-assets COMMAND test-theme-assets)
     set_tests_properties(theme-assets PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

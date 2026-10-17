@@ -161,22 +161,40 @@ int main(int argc, char **argv)
         auto *panel = qobject_cast<QWindow *>(bundle.property(QStringLiteral("panel")).toQObject());
         const QRect geometry = app.screens().at(i)->geometry();
         if (!desktop || !panel || desktop->size() != geometry.size()
-            || panel->width() != geometry.width() || panel->height() != 48
-            || panel->y() != geometry.bottom() + 1 - 48) {
+            || panel->width() != geometry.width() || panel->height() != 40
+            || panel->y() != geometry.bottom() + 1 - 40) {
             qCritical() << "Desktop/panel screen geometry is invalid:" << geometry
                         << (desktop ? desktop->geometry() : QRect()) << (panel ? panel->geometry() : QRect());
             return 1;
         }
+        // Empty space belongs to the window list, never between status widgets.
+        // This catches RowLayout's expanding default size policy on the tray.
+        for (int width : {800, 1280, 1920}) {
+            panel->resize(width, panel->height());
+            settle();
+            auto *network = panel->findChild<QQuickItem *>(QStringLiteral("aeroshell-networkButton"));
+            auto *tray = panel->findChild<QQuickItem *>(QStringLiteral("aeroshell-statusTray"));
+            auto *showDesktop = panel->findChild<QQuickItem *>(QStringLiteral("aeroshell-showDesktopButton"));
+            if (!network || !tray || !showDesktop
+                || network->mapToScene(QPointF()).x() < width - 340
+                || tray->width() > 40
+                || qAbs(showDesktop->mapToScene(QPointF()).x() + showDesktop->width() - width) > 1) {
+                qCritical() << "Status controls are spread across the taskbar at width" << width;
+                return 1;
+            }
+        }
+        panel->resize(geometry.width(), panel->height());
+        settle();
         // A real Wayland toplevel is told (0,0), independent of the panel's
         // global compositor position. This must not move Start above the output.
         panel->setPosition(0, 0);
-        if (panel->property("desiredY").toInt() != geometry.bottom() + 1 - 48
+        if (panel->property("desiredY").toInt() != geometry.bottom() + 1 - 40
             || bundle.property(QStringLiteral("launcher")).toQObject()->property("desiredY").toInt()
-                != geometry.bottom() + 1 - 48 - bundle.property(QStringLiteral("launcher")).toQObject()->property("height").toInt() - 6) {
+                != geometry.bottom() + 1 - 40 - bundle.property(QStringLiteral("launcher")).toQObject()->property("height").toInt()) {
             qCritical("Compositor-local coordinates corrupted shell placement.");
             return 1;
         }
-        panel->setPosition(geometry.x(), geometry.bottom() + 1 - 48);
+        panel->setPosition(geometry.x(), geometry.bottom() + 1 - 40);
         if (argc == 2) {
             const QDir output(QString::fromLocal8Bit(argv[1]));
             if (!output.mkpath(QStringLiteral("."))) {
@@ -192,7 +210,7 @@ int main(int argc, char **argv)
             }
         }
         // Panel popovers must have their own surface; item popovers are clipped
-        // to the panel's 48 pixels by the compositor.
+        // to the panel's 40 pixels by the compositor.
         for (QObject *child : panel->findChildren<QObject *>()) {
             const QVariant type = child->property("popupType");
             if (!type.isValid() || !child->objectName().startsWith(QStringLiteral("aeroshell-"))) {
@@ -214,6 +232,14 @@ int main(int argc, char **argv)
         auto *launcher = bundle.property(QStringLiteral("launcher")).toQObject();
         launcher->setProperty("visible", true);
         settle();
+        if (argc == 2) {
+            const QDir output(QString::fromLocal8Bit(argv[1]));
+            auto *window = qobject_cast<QQuickWindow *>(launcher);
+            if (!window || !window->grabWindow().save(output.filePath(QStringLiteral("start-%1.png").arg(i)))) {
+                qCritical("Could not save the Start menu preview.");
+                return 1;
+            }
+        }
         launcher->setProperty("visible", false);
     }
     if (popupCount < 7 * app.screens().size()) {

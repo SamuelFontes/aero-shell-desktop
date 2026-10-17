@@ -58,7 +58,8 @@ orb_width, orb_height = struct.unpack(">II", orb_data[16:24])
 require((orb_width, orb_height) == (54, 162), "the AeroThemePlasma Start orb must contain three 54-pixel state frames")
 require("theme=__aurorae__svg__Se7enAero" in kwin_defaults.read_text(),
         "the first-login KWin profile does not select the Aero window decoration")
-require("blurEnabled=true" in kwin_defaults.read_text() and "glideEnabled=true" in kwin_defaults.read_text(),
+require("aeroglassblurEnabled=true" in kwin_defaults.read_text()
+        and "blurEnabled=false" in kwin_defaults.read_text() and "glideEnabled=true" in kwin_defaults.read_text(),
         "the first-login KWin profile does not enable Aero glass blur and window animations")
 require('"KPackageStructure": "Plasma/Shell"' in (lock_theme / "metadata.json").read_text()
         and "LockOnResume=true" in lock_defaults.read_text()
@@ -76,8 +77,9 @@ icon_paths = list(icon_theme.parent.rglob("*"))
 require(sum(path.is_file() for path in icon_paths) >= 5000,
         "the full Windows 7 Aero icon theme is not bundled")
 icon_index = icon_theme.read_text()
-require("Inherits=Adwaita,hicolor" in icon_index and "scalable/status" in icon_index,
-        "Aero icons do not register shell scalable icons and standard fallbacks")
+require("Inherits=AeroShellFallback,Adwaita,hicolor" in icon_index
+        and (ROOT / "assets/icons/AeroShellFallback/index.theme").is_file(),
+        "Aero icons do not register the separate shell fallback theme")
 require('"Noto Sans"' in main and "required Noto Sans font is unavailable" in main,
         "Noto Sans must be selected and missing-font fallback must fail")
 require("aerothemeplasma-default.jpg" in main, "the bundled AeroThemePlasma wallpaper is not the first-login default")

@@ -1,0 +1,34 @@
+[Icon Theme]
+Name=AeroShellFallback
+Comment=Fallback icons for names absent from Windows 7 Aero
+Inherits=Adwaita,hicolor
+Directories=scalable/actions,scalable/apps,scalable/places,scalable/status
+
+[scalable/actions]
+Size=24
+MinSize=8
+MaxSize=256
+Context=Actions
+Type=Scalable
+
+[scalable/apps]
+Size=24
+MinSize=8
+MaxSize=256
+Context=Applications
+Type=Scalable
+
+[scalable/places]
+Size=24
+MinSize=8
+MaxSize=256
+Context=Places
+Type=Scalable
+
+[scalable/status]
+Size=24
+MinSize=8
+MaxSize=256
+Context=Status
+Type=Scalable
+

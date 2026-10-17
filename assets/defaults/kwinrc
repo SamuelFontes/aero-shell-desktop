@@ -5,7 +5,8 @@ library=org.kde.kwin.aurorae.v2
 theme=__aurorae__svg__Se7enAero
 
 [Plugins]
-blurEnabled=true
+blurEnabled=false
+aeroglassblurEnabled=true
 glideEnabled=true
 
 aeroshell-shortcutsEnabled=true
@@ -20,3 +21,12 @@ BorderlessMaximizedWindows=false
 
 [MouseBindings]
 CommandAllKey=Alt
+
+[AeroShell]
+GlassIntegrationVersion=1
+
+[Effect-aeroglassblur]
+AeroHue=210
+AeroSaturation=54
+AeroBrightness=99
+AeroIntensity=107

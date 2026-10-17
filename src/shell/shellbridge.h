@@ -9,8 +9,6 @@
 
 namespace KWayland::Client {
 class ConnectionThread;
-class Blur;
-class BlurManager;
 class PlasmaShell;
 class PlasmaShellSurface;
 class PlasmaWindowManagement;
@@ -52,8 +50,6 @@ protected:
 private:
     KWayland::Client::ConnectionThread *m_connection = nullptr;
     KWayland::Client::Registry *m_registry = nullptr;
-    KWayland::Client::BlurManager *m_blurManager = nullptr;
-    QHash<QWindow *, QPointer<KWayland::Client::Blur>> m_blurs;
     KWayland::Client::PlasmaShell *m_plasmaShell = nullptr;
     KWayland::Client::PlasmaWindowManagement *m_windowManagement = nullptr;
     KWayland::Client::PlasmaWindowModel *m_windowModel = nullptr;

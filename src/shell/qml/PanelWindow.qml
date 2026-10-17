@@ -3,12 +3,13 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
+import org.kde.ksvg as KSvg
 
 Window {
     id: panel
     property var targetScreen
     property var launcherWindow
-    readonly property int panelHeight: 48
+    readonly property int panelHeight: 40
     property date displayedMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
     property string pendingNetworkSsid: ""
     property string pendingNetworkSecurity: ""
@@ -41,7 +42,7 @@ Window {
 
     screen: targetScreen
     readonly property real desiredX: targetScreen ? targetScreen.virtualX : 0
-    readonly property real desiredY: targetScreen ? targetScreen.virtualY + targetScreen.height - panelHeight : 672
+    readonly property real desiredY: targetScreen ? targetScreen.virtualY + targetScreen.height - panelHeight : 680
     x: desiredX
     y: desiredY
     width: targetScreen ? targetScreen.width : 1280
@@ -58,41 +59,33 @@ Window {
         shellBridge.setSurfacePosition(panel, Qt.point(desiredX, desiredY))
     }
 
-    Rectangle {
+    // Render the original theme's bottom-panel frame, including its glass and borders.
+    KSvg.FrameSvgItem {
         anchors.fill: parent
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "#d9e9f9" }
-            GradientStop { position: 0.12; color: "#779bc5" }
-            GradientStop { position: 0.48; color: "#3e6e9e" }
-            GradientStop { position: 0.52; color: "#2e5782" }
-            GradientStop { position: 0.92; color: "#20446f" }
-            GradientStop { position: 1.0; color: "#122b49" }
-        }
-        border.color: "#d8ebff"
-        border.width: 1
-        opacity: 0.84
+        imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/panel-background.svg"
+        prefix: "south"
     }
 
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: 10
+        anchors.leftMargin: 0
         anchors.rightMargin: 0
-        spacing: 8
+        spacing: 0
 
         Button {
             id: startButton
             text: "Start"
-            Layout.preferredWidth: 48
+            Layout.preferredWidth: 60
             Layout.fillHeight: true
             onClicked: panel.toggleLauncher()
             contentItem: Item {
                 Image {
                     id: startOrbIcon
                     anchors.centerIn: parent
-                    width: 42
-                    height: 42
+                    width: 54
+                    height: 54
                     source: "file://" + aeroThemeAssetsPath + "/widgets/aerothemeplasma-start-orb.png"
-                    sourceClipRect: Qt.rect(0, startButton.down ? 108 : startButton.hovered ? 54 : 0, 54, 54)
+                    sourceClipRect: Qt.rect(0, (startButton.down || (panel.launcherWindow && panel.launcherWindow.visible)) ? 108 : startButton.hovered ? 54 : 0, 54, 54)
                     sourceSize: Qt.size(54, 162)
                     fillMode: Image.PreserveAspectFit
                     visible: status === Image.Ready
@@ -106,20 +99,16 @@ Window {
                     font.pixelSize: 22
                 }
             }
-            background: Rectangle {
-                radius: 5
-                color: startButton.down ? "#315e89" : startButton.hovered ? "#204876" : "transparent"
-            }
+            background: Item { }
         }
-
-        Rectangle { Layout.fillHeight: true; width: 1; color: "#85a6cb"; opacity: 0.6 }
 
         ListView {
             id: tasks
+            objectName: "aeroshell-tasks"
             Layout.fillWidth: true
             Layout.fillHeight: true
             orientation: ListView.Horizontal
-            spacing: 5
+            spacing: 2
             clip: true
             model: aeroWindowModel
             keyNavigationEnabled: true
@@ -136,10 +125,13 @@ Window {
                 readonly property bool skipTaskbar: model.SkipTaskbar
                 readonly property int windowCount: model.WindowCount === undefined ? 1 : model.WindowCount
                 readonly property bool isPinned: model.IsPinned || false
+                readonly property bool keyboardFocused: tasks.activeFocus && tasks.currentIndex === index
                 required property int index
                 visible: !skipTaskbar
                 width: visible ? 58 : 0
-                height: 38
+                height: tasks.height - 2
+                y: 1
+                padding: 0
                 text: model.display
                 ToolTip.visible: hovered
                 ToolTip.text: text
@@ -190,15 +182,19 @@ Window {
                         onTriggered: aeroWindowModel.requestClose(index)
                     }
                 }
-                background: Rectangle {
-                    radius: 4
-                    border.color: tasks.activeFocus && tasks.currentIndex === index ? "white" : isActive ? "#c4e0ff" : windowCount ? "#71869d" : "transparent"
-                    border.width: 1
-                    gradient: Gradient {
-                        GradientStop { position: 0; color: isActive ? "#91bce6" : windowCount ? "#315e89" : "transparent" }
-                        GradientStop { position: 1; color: isActive ? "#2b74c7" : windowCount ? "#204876" : "transparent" }
+                background: KSvg.FrameSvgItem {
+                    imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/tasks.svg"
+                    readonly property string basePrefix: isActive || taskButton.down ? "active" : "normal"
+                    prefix: basePrefix + (taskButton.hovered || taskButton.keyboardFocused ? "-hover" : "")
+                    visible: windowCount > 0 || taskButton.hovered || taskButton.keyboardFocused
+                    KSvg.FrameSvgItem {
+                        anchors.fill: parent
+                        imagePath: parent.imagePath
+                        prefix: (isActive ? "active-" : "") + (windowCount > 2 ? "group3" : "group")
+                        visible: windowCount > 1
                     }
                 }
+
                 contentItem: Item {
                     Image {
                         anchors.centerIn: parent
@@ -224,27 +220,29 @@ Window {
         }
 
 
-        Rectangle { Layout.fillHeight: true; width: 1; color: "#85a6cb"; opacity: 0.6 }
 
         ToolButton {
             id: networkButton
+            objectName: "aeroshell-networkButton"
+            Layout.fillWidth: false
             visible: shellSettings.panelWidgets.network
-            Layout.preferredWidth: visible ? 38 : 0
+            Layout.preferredWidth: visible ? 28 : 0
             Layout.fillHeight: true
             onClicked: networkPopup.open()
             ToolTip.visible: hovered
             ToolTip.text: networkStatus.summary
-            background: Rectangle {
-                radius: 4
-                color: networkButton.down ? "#418bd4" : networkButton.hovered ? "#497caf" : "transparent"
+            background: KSvg.FrameSvgItem {
+                imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/taskbarhover.svg"
+                prefix: networkButton.down ? "active" : "normal"
+                visible: networkButton.hovered || networkButton.down
             }
             contentItem: Item {
                 Image {
                     id: networkIcon
                     anchors.centerIn: parent
-                    width: 21
-                    height: 21
-                    source: (networkStatus.connected ? "image://theme/network-wireless" : "image://theme/network-offline") + "?v=" + shellSettings.iconThemeRevision
+                    width: 16
+                    height: 16
+                    source: (networkStatus.connected ? "image://theme/network-wireless-connected-100" : "image://theme/network-offline") + "?v=" + shellSettings.iconThemeRevision
                     sourceSize: Qt.size(width, height)
                     fillMode: Image.PreserveAspectFit
                     visible: status === Image.Ready
@@ -271,10 +269,8 @@ Window {
             closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
             onOpened: if (networkStatus.available && networkStatus.wifiEnabled) networkStatus.scanWifi()
 
-            background: Rectangle {
-                radius: 7
-                color: "#ffffff"
-                border.color: "#9bbde0"
+            background: KSvg.FrameSvgItem {
+                imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/popup-background.svg"
             }
 
             ColumnLayout {
@@ -427,8 +423,10 @@ Window {
 
         ToolButton {
             id: audioButton
+            objectName: "aeroshell-audioButton"
+            Layout.fillWidth: false
             visible: audioControl.available && shellSettings.panelWidgets.audio
-            Layout.preferredWidth: visible ? 38 : 0
+            Layout.preferredWidth: visible ? 28 : 0
             Layout.fillHeight: true
             onClicked: audioPopup.open()
             ToolTip.visible: hovered
@@ -436,16 +434,17 @@ Window {
             contentItem: Image {
                 id: volumeIcon
                 anchors.centerIn: parent
-                width: 22
-                height: 22
+                width: 16
+                height: 16
                 source: (audioControl.muted ? "image://theme/audio-volume-muted" : "image://theme/audio-volume-high") + "?v=" + shellSettings.iconThemeRevision
-                sourceSize: Qt.size(width, height)
+                sourceSize: Qt.size(16, 16)
                 fillMode: Image.PreserveAspectFit
                 visible: status === Image.Ready
             }
-            background: Rectangle {
-                radius: 4
-                color: audioButton.down ? "#418bd4" : audioButton.hovered ? "#497caf" : "transparent"
+            background: KSvg.FrameSvgItem {
+                imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/taskbarhover.svg"
+                prefix: audioButton.down ? "active" : "normal"
+                visible: audioButton.hovered || audioButton.down
             }
             Text {
                 anchors.centerIn: parent
@@ -467,10 +466,8 @@ Window {
             padding: 12
             closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
-            background: Rectangle {
-                radius: 7
-                color: "#ffffff"
-                border.color: "#9bbde0"
+            background: KSvg.FrameSvgItem {
+                imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/popup-background.svg"
             }
 
             ColumnLayout {
@@ -511,33 +508,23 @@ Window {
 
         ToolButton {
             id: batteryButton
+            objectName: "aeroshell-batteryButton"
+            Layout.fillWidth: false
             visible: batteryStatus.present && shellSettings.panelWidgets.battery
-            Layout.preferredWidth: visible ? 58 : 0
+            Layout.preferredWidth: visible ? 28 : 0
             Layout.fillHeight: true
             onClicked: batteryPopup.open()
             ToolTip.visible: hovered
             ToolTip.text: `${batteryStatus.summary} · ${batteryStatus.percentage}%`
-            background: Rectangle {
-                radius: 4
-                color: batteryButton.down ? "#418bd4" : batteryButton.hovered ? "#497caf" : "transparent"
+            background: KSvg.FrameSvgItem {
+                imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/taskbarhover.svg"
+                prefix: batteryButton.down ? "active" : "normal"
+                visible: batteryButton.hovered || batteryButton.down
             }
-            contentItem: RowLayout {
-                spacing: 3
-                Image {
-                    Layout.preferredWidth: 19
-                    Layout.preferredHeight: 19
-                    source: (batteryStatus.percentage < 20 ? "image://theme/battery-low" : "image://theme/battery-full") + "?v=" + shellSettings.iconThemeRevision
-                    sourceSize: Qt.size(width, height)
-                    fillMode: Image.PreserveAspectFit
-                }
-                Text {
-                    Layout.fillWidth: true
-                    text: `${batteryStatus.percentage}%`
-                    color: "white"
-                    font.pixelSize: 11
-                    horizontalAlignment: Text.AlignLeft
-                    verticalAlignment: Text.AlignVCenter
-                }
+            contentItem: Image {
+                source: (batteryStatus.percentage < 20 ? "image://theme/battery-low" : "image://theme/battery-full") + "?v=" + shellSettings.iconThemeRevision
+                sourceSize: Qt.size(16, 16)
+                fillMode: Image.PreserveAspectFit
             }
         }
 
@@ -552,10 +539,8 @@ Window {
             padding: 12
             closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
-            background: Rectangle {
-                radius: 7
-                color: "#ffffff"
-                border.color: "#9bbde0"
+            background: KSvg.FrameSvgItem {
+                imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/popup-background.svg"
             }
 
             ColumnLayout {
@@ -585,21 +570,24 @@ Window {
 
         ToolButton {
             id: notificationButton
+            objectName: "aeroshell-notificationButton"
+            Layout.fillWidth: false
             visible: shellSettings.panelWidgets.notifications
-            Layout.preferredWidth: visible ? 38 : 0
+            Layout.preferredWidth: visible ? 28 : 0
             Layout.fillHeight: true
             onClicked: notificationPopup.open()
             ToolTip.visible: hovered
             ToolTip.text: notificationModel.status
-            background: Rectangle {
-                radius: 4
-                color: notificationButton.down ? "#418bd4" : notificationButton.hovered ? "#497caf" : "transparent"
+            background: KSvg.FrameSvgItem {
+                imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/taskbarhover.svg"
+                prefix: notificationButton.down ? "active" : "normal"
+                visible: notificationButton.hovered || notificationButton.down
             }
             contentItem: Item {
                 Image {
                     anchors.centerIn: parent
-                    width: 21
-                    height: 21
+                    width: 16
+                    height: 16
                     source: "image://theme/notifications?v=" + shellSettings.iconThemeRevision
                     sourceSize: Qt.size(width, height)
                     fillMode: Image.PreserveAspectFit
@@ -635,10 +623,8 @@ Window {
             height: 400
             padding: 10
             closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-            background: Rectangle {
-                radius: 7
-                color: "#ffffff"
-                border.color: "#9bbde0"
+            background: KSvg.FrameSvgItem {
+                imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/popup-background.svg"
             }
             ColumnLayout {
                 anchors.fill: parent
@@ -760,10 +746,8 @@ Window {
             padding: 12
             closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
             onClosed: notificationToastTimer.stop()
-            background: Rectangle {
-                radius: 7
-                color: "#ffffff"
-                border.color: "#6597c6"
+            background: KSvg.FrameSvgItem {
+                imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/popup-background.svg"
             }
             ColumnLayout {
                 anchors.fill: parent
@@ -827,6 +811,9 @@ Window {
 
         RowLayout {
             id: statusTray
+            objectName: "aeroshell-statusTray"
+            Layout.fillWidth: false
+            Layout.maximumWidth: implicitWidth
             visible: shellSettings.panelWidgets.tray
             Layout.preferredWidth: visible ? implicitWidth : 0
             Layout.fillHeight: true
@@ -843,7 +830,7 @@ Window {
                     required property string status
                     required property bool itemIsMenu
                     visible: status !== "Passive"
-                    Layout.preferredWidth: visible ? 34 : 0
+                    Layout.preferredWidth: visible ? 26 : 0
                     Layout.fillHeight: true
                     onClicked: {
                         if (menuPath.length)
@@ -860,10 +847,11 @@ Window {
                     }
                     ToolTip.visible: hovered
                     ToolTip.text: title
-                    background: Rectangle {
-                        radius: 4
-                        color: trayButton.down ? "#418bd4" : trayButton.hovered ? "#497caf" : "transparent"
-                    }
+                    background: KSvg.FrameSvgItem {
+                imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/taskbarhover.svg"
+                prefix: trayButton.down ? "active" : "normal"
+                visible: trayButton.hovered || trayButton.down
+            }
                     contentItem: Item {
                         Image {
                             id: trayIcon
@@ -919,10 +907,8 @@ Window {
             closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
             onClosed: remoteMenuModel.close()
 
-            background: Rectangle {
-                radius: 6
-                color: "#f3f7fc"
-                border.color: "#789bc0"
+            background: KSvg.FrameSvgItem {
+                imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/popup-background.svg"
             }
 
             contentItem: ColumnLayout {
@@ -1030,6 +1016,8 @@ Window {
 
         ToolButton {
             id: keyboardLayoutButton
+            objectName: "aeroshell-keyboardLayoutButton"
+            Layout.fillWidth: false
             visible: keyboardLayoutStatus.available && shellSettings.panelWidgets.keyboard
             Layout.preferredWidth: visible ? 40 : 0
             Layout.fillHeight: true
@@ -1037,9 +1025,10 @@ Window {
             onClicked: keyboardLayoutStatus.nextLayout()
             ToolTip.visible: hovered
             ToolTip.text: `${keyboardLayoutStatus.currentName} · click to switch`
-            background: Rectangle {
-                radius: 4
-                color: keyboardLayoutButton.down ? "#418bd4" : keyboardLayoutButton.hovered ? "#497caf" : "transparent"
+            background: KSvg.FrameSvgItem {
+                imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/taskbarhover.svg"
+                prefix: keyboardLayoutButton.down ? "active" : "normal"
+                visible: keyboardLayoutButton.hovered || keyboardLayoutButton.down
             }
             contentItem: Text {
                 text: keyboardLayoutButton.text
@@ -1060,25 +1049,31 @@ Window {
 
         ToolButton {
             id: clockButton
+            objectName: "aeroshell-clockButton"
+            Layout.fillWidth: false
             visible: shellSettings.panelWidgets.clock
             Layout.preferredWidth: visible ? 92 : 0
             Layout.fillHeight: true
             onClicked: calendarPopup.open()
             ToolTip.visible: hovered
             ToolTip.text: "Open calendar"
-            background: Rectangle {
-                radius: 4
-                color: clockButton.down ? "#418bd4" : clockButton.hovered ? "#497caf" : "transparent"
+            background: KSvg.FrameSvgItem {
+                imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/taskbarhover.svg"
+                prefix: clockButton.down ? "active" : "normal"
+                visible: clockButton.hovered || clockButton.down
             }
-            contentItem: Column {
-                spacing: 1
+            contentItem: Item {
+              Column {
                 anchors.centerIn: parent
+                width: parent.width
+                spacing: 1
                 Text {
                     id: clockTime
                     width: parent.width
                     color: "white"
                     font.pixelSize: 12
-                    horizontalAlignment: Text.AlignRight
+                    font.weight: Font.Normal
+                    horizontalAlignment: Text.AlignHCenter
                     text: Qt.formatTime(new Date(), "h:mm AP")
                 }
                 Text {
@@ -1086,7 +1081,8 @@ Window {
                     width: parent.width
                     color: "#d8ebff"
                     font.pixelSize: 10
-                    horizontalAlignment: Text.AlignRight
+                    font.weight: Font.Normal
+                    horizontalAlignment: Text.AlignHCenter
                     text: Qt.formatDate(new Date(), "M/d/yyyy")
                 }
                 Timer {
@@ -1098,6 +1094,7 @@ Window {
                         clockDate.text = Qt.formatDate(new Date(), "M/d/yyyy")
                     }
                 }
+              }
             }
         }
 
@@ -1118,10 +1115,8 @@ Window {
                 return new Date(displayedMonth.getFullYear(), displayedMonth.getMonth(), 1 - mondayOffset + index)
             }
 
-            background: Rectangle {
-                radius: 7
-                color: "#ffffff"
-                border.color: "#9bbde0"
+            background: KSvg.FrameSvgItem {
+                imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/popup-background.svg"
             }
 
             ColumnLayout {
@@ -1200,14 +1195,16 @@ Window {
         }
         Button {
             id: showDesktopButton
+            objectName: "aeroshell-showDesktopButton"
+            Layout.fillWidth: false
             Layout.preferredWidth: 14
             Layout.fillHeight: true
             onClicked: shellBridge.toggleShowDesktop()
             ToolTip.visible: hovered
             ToolTip.text: "Show desktop (Win+D)"
-            background: Rectangle {
-                border.color: "#8eacc9"
-                color: showDesktopButton.hovered ? "#80c5e6ff" : "#304c759f"
+            background: KSvg.FrameSvgItem {
+                imagePath: aeroThemeAssetsPath + "/widgets/aerothemeplasma/showdesktop.svg"
+                prefix: showDesktopButton.down || shellBridge.showingDesktop ? "selected" : showDesktopButton.hovered ? "hover" : "normal"
             }
         }
     }

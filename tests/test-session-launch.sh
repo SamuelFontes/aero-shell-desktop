@@ -92,7 +92,7 @@ printf '%s\n' \
     "$XDG_CURRENT_DESKTOP" "$XDG_SESSION_DESKTOP" "$XDG_SESSION_TYPE" "$DESKTOP_SESSION" \
     "$XDG_RUNTIME_DIR" "$DBUS_SESSION_BUS_ADDRESS" "$XDG_DATA_DIRS" "$GTK_THEME" "$FONTCONFIG_FILE" \
     "$QT_QUICK_CONTROLS_CONF" "$XCURSOR_THEME" "$XCURSOR_PATH" "$XCURSOR_SIZE" \
-    "$PLASMA_DEFAULT_SHELL" \
+    "$PLASMA_DEFAULT_SHELL" "$QT_PLUGIN_PATH" \
     > "$AEROSHELL_TEST_ENV_FILE"
 FAKE_KWIN
 chmod +x "$TEMP_ROOT/bin/kwin_wayland"
@@ -161,12 +161,17 @@ rg -q '^Theme=Windows 7 Aero$' "$XDG_CONFIG_HOME/aeroshell/kwin/config/kdeglobal
 rg -q '^font=Noto Sans,' "$XDG_CONFIG_HOME/aeroshell/kwin/config/kdeglobals" \
     || fail "the compositor/greeter profile did not select Noto Sans"
 
-printf '[Custom]\nSentinel=keep this AeroShell customization\n' > "$XDG_CONFIG_HOME/aeroshell/kwin/config/kwinrc"
+printf '[Custom]\nSentinel=keep this AeroShell customization\n[Effect-aeroglassblur]\nAeroHue=123\n' > "$XDG_CONFIG_HOME/aeroshell/kwin/config/kwinrc"
 printf 'keep this lock-screen customization\n' > "$XDG_CONFIG_HOME/aeroshell/kwin/config/kscreenlockerrc"
 bash "$ROOT/session/aeroshell-session-wayland"
 rg -q '^Sentinel=keep this AeroShell customization$' "$XDG_CONFIG_HOME/aeroshell/kwin/config/kwinrc" || fail 'second launch lost KWin custom settings'
 rg -q '^cursorSize=32$' "$XDG_CONFIG_HOME/aeroshell/kwin/config/kcminputrc" || fail 'compositor cursor size is inconsistent'
 rg -q '^aeroshell-shortcutsEnabled=true$' "$XDG_CONFIG_HOME/aeroshell/kwin/config/kwinrc" || fail 'existing profiles do not enable shortcuts'
+rg -q '^aeroglassblurEnabled=true$' "$XDG_CONFIG_HOME/aeroshell/kwin/config/kwinrc" || fail 'existing profiles do not enable the Aero Glass effect'
+rg -q '^blurEnabled=false$' "$XDG_CONFIG_HOME/aeroshell/kwin/config/kwinrc" || fail 'the conflicting stock blur effect remains enabled'
+rg -q '^AeroHue=123$' "$XDG_CONFIG_HOME/aeroshell/kwin/config/kwinrc" || fail 'glass migration lost the user tint'
+rg -q '^AeroIntensity=107$' "$XDG_CONFIG_HOME/aeroshell/kwin/config/kwinrc" || fail 'glass migration did not seed missing preset values'
+assert_file_line "$TEMP_ROOT/kwin-env" 19 "$AEROSHELL_PREFIX/lib/qt6/plugins${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}"
 assert_equal 'keep this lock-screen customization' "$(cat "$XDG_CONFIG_HOME/aeroshell/kwin/config/kscreenlockerrc")" "second launch preserves lock-screen settings"
 
 export XDG_CONFIG_HOME="$TEMP_ROOT/already-aeroshell"
