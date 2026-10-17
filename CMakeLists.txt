@@ -19,6 +19,12 @@ foreach(directory_var IN ITEMS CMAKE_INSTALL_BINDIR CMAKE_INSTALL_LIBEXECDIR)
     endif()
 endforeach()
 
+option(AEROSHELL_BUILD_PROTOTYPE "Build the retired custom shell instead of the original Aero desktop" OFF)
+if(NOT AEROSHELL_BUILD_PROTOTYPE)
+    include(cmake/NativeDesktop.cmake)
+    return()
+endif()
+
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core DBus Gui Widgets Qml Quick QuickControls2)
 find_package(KF6KIO REQUIRED)
 find_package(KF6Service REQUIRED)

@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=AeroShell (Wayland)
-Comment=Independent AeroShell desktop session
+Comment=Original AeroThemePlasma desktop with separate settings
 Type=Application
 Exec=/usr/bin/aeroshell-session-wayland
 TryExec=/usr/bin/aeroshell-session-wayland

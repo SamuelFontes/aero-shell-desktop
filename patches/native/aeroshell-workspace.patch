@@ -1,0 +1,98 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b423864..2f099b1 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -30,11 +30,11 @@ find_package(KSysGuard CONFIG REQUIRED)
+ find_package(LibNotificationManager CONFIG REQUIRED)
+ 
+ find_package(Plasma ${PROJECT_VERSION} REQUIRED)
+-find_package(PlasmaActivities ${PROJECT_VERSION} REQUIRED)
+-find_package(PlasmaActivitiesStats ${PROJECT_VERSION} REQUIRED)
++find_package(PlasmaActivities 6.7.4 REQUIRED)
++find_package(PlasmaActivitiesStats 6.7.4 REQUIRED)
+ 
+ add_subdirectory(aeroshell-kcmloader)
+-add_subdirectory(fontconfig)
++
+ add_subdirectory(mimetype)
+ 
+ add_subdirectory(libtaskmanager)
+diff --git a/libaeroshellutils/sddm.cpp b/libaeroshellutils/sddm.cpp
+index 4c27f54..94c32f0 100755
+--- a/libaeroshellutils/sddm.cpp
++++ b/libaeroshellutils/sddm.cpp
+@@ -11,7 +11,8 @@
+ 
+ #include <KConfigGroup>
+ 
+-static const QString s_cfgPath{"/etc/sddm.conf.d/kde_settings.conf"};
++// AeroShell keeps lock-screen artwork in its own profile, independent of SDDM.
++static const QString s_cfgPath = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + "/kscreenlockerrc";
+ 
+ SDDM::SDDM(QObject *parent)
+     : QObject(parent)
+@@ -35,57 +36,14 @@ QString SDDM::currentBackground()
+ // TODO: clean this mess of a code
+ void SDDM::reloadProperties()
+ {
+-    QString prev{};
+-    KConfigGroup cg;
+-
+     m_cfg->reparseConfiguration();
+-
+-    {
+-        cg = m_cfg->group("Theme");
+-        prev = m_currentTheme;
+-        m_currentTheme = cg.readEntry("Current", "sddm-theme-mod");
+-        Q_EMIT currentThemeChanged(prev);
+-    }
+-
+-    {
+-        QStringList paths = QStandardPaths::locateAll(QStandardPaths::GenericDataLocation, "sddm", QStandardPaths::LocateDirectory);
+-
+-        if(!paths.isEmpty()) {
+-            QString path = paths.last();
+-
+-            if(!(path.startsWith("/home") || path.startsWith("~/"))) {
+-                path += "/themes/" + m_currentTheme + "/";
+-
+-                if(QFile::exists(path + "background")) {
+-                    prev = m_currentBackground;
+-                    m_currentBackground = path + "background";
+-                    Q_EMIT currentBackgroundChanged(prev);
+-
+-                } else if(QFile::exists(path + "default-background")) {
+-                    prev = m_currentBackground;
+-                    m_currentBackground = path + "default-background";
+-                    Q_EMIT currentBackgroundChanged(prev);
+-
+-                } else { // non-aeroshell sddm themes
+-                    KSharedConfig::Ptr conf = KSharedConfig::openConfig(path + "theme.conf.user");
+-                    if(conf) {
+-                        conf->addConfigSources({path + "theme.conf"});
+-                        cg = conf->group("General");
+-
+-                        QString bg = cg.readEntry("background", "");
+-
+-                        prev = m_currentBackground;
+-                        if(bg.startsWith("./") || !bg.startsWith("/")) {
+-                            m_currentBackground = path + bg;
+-                        } else {
+-                            m_currentBackground = bg;
+-                        }
+-                        Q_EMIT currentBackgroundChanged(prev);
+-                    }
+-                }
+-            }
+-        }
+-    }
++    KConfigGroup group(m_cfg, "Greeter");
++    group = group.group("Wallpaper").group("org.kde.image").group("General");
++    m_currentTheme = "AeroShell";
++    m_currentBackground = group.readEntry("Image", QStandardPaths::locate(QStandardPaths::GenericDataLocation,
++        "aeroshell/wallpapers/aerothemeplasma-default.jpg"));
++    Q_EMIT currentThemeChanged(m_currentTheme);
++    Q_EMIT currentBackgroundChanged(m_currentBackground);
+ }
+ 
+ #include "moc_sddm.cpp"

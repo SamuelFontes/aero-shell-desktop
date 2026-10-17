@@ -1,0 +1,26 @@
+diff --git a/effects_cpp/wayland/kde-effects-aeroglassblur/src/blur.cpp b/effects_cpp/wayland/kde-effects-aeroglassblur/src/blur.cpp
+index 13b742f..4b2c6d1 100755
+--- a/effects_cpp/wayland/kde-effects-aeroglassblur/src/blur.cpp
++++ b/effects_cpp/wayland/kde-effects-aeroglassblur/src/blur.cpp
+@@ -91,7 +91,7 @@ static QMatrix4x4 colorTransformMatrix(qreal saturation, qreal brightness)
+ }
+ 
+ BlurEffect::BlurEffect()
+-    : m_sharedMemory("kwinaero")
++    : m_sharedMemory(QStringLiteral("aeroshell-native-kwinaero-") + qEnvironmentVariable("AEROSHELL_SESSION_BUS_ADDRESS"))
+ {
+     BlurConfig::instance(effects->config());
+     ensureResources();
+diff --git a/effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.cpp b/effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.cpp
+index 343b8e3..6f66706 100755
+--- a/effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.cpp
++++ b/effects_cpp/wayland/kde-effects-aeroglassblur/src/kcm/blur_config.cpp
+@@ -26,7 +26,7 @@ namespace KWin
+ K_PLUGIN_CLASS(BlurEffectConfig)
+ 
+ BlurEffectConfig::BlurEffectConfig(QObject *parent, const KPluginMetaData &data)
+-    : KCModule(parent, data), m_sharedMemory("kwinaero")
++    : KCModule(parent, data), m_sharedMemory(QStringLiteral("aeroshell-native-kwinaero-") + qEnvironmentVariable("AEROSHELL_SESSION_BUS_ADDRESS"))
+ {
+     KLocalizedString::setApplicationDomain("aeroshell-kwin-components");
+     ui.setupUi(widget());

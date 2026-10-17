@@ -2,7 +2,7 @@
 pkgname=aeroshell-desktop-git
 pkgver=0.1.0.r1.g0000000
 pkgrel=1
-pkgdesc='Independent Wayland desktop with preconfigured AeroThemePlasma defaults'
+pkgdesc='Original AeroThemePlasma desktop in an isolated, preconfigured Wayland session'
 arch=('x86_64' 'aarch64')
 url='https://github.com/SamuelFontes/aero-shell-desktop'
 license=('MIT' 'CC0-1.0' 'GPL-2.0-or-later' 'AGPL-3.0-only')
@@ -13,6 +13,14 @@ depends=(
   'kscreenlocker>=6.7.4'
   'kscreenlocker<6.7.5'
   'plasma-workspace'
+  'plasma-desktop'
+  'plasma-nm'
+  'plasma-pa'
+  'powerdevil'
+  'kvantum'
+  'qqc2-desktop-style'
+  'dolphin'
+  'python'
   'plasma5support'
   'qt6-base>=6.8'
   'qt6-wayland'
@@ -41,7 +49,7 @@ depends=(
   'xdg-desktop-portal-gtk'
   'xdg-desktop-portal-kde'
 )
-makedepends=('cmake' 'ninja' 'git' 'python' 'desktop-file-utils' 'extra-cmake-modules' 'vulkan-headers' 'wayland-protocols')
+makedepends=('cmake' 'ninja' 'git' 'python' 'desktop-file-utils' 'extra-cmake-modules' 'vulkan-headers' 'wayland-protocols' 'qt6-tools' 'qt6-wayland' 'libksysguard')
 optdepends=(
   'wireplumber: Volume controls through wpctl'
 )
@@ -59,21 +67,15 @@ build() {
   cd "${srcdir}/${pkgname}"
   cmake -S . -B build -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=/opt/aeroshell
+    -DCMAKE_INSTALL_PREFIX=/opt/aeroshell \
+    -DAEROSHELL_NATIVE_STAGE="${AEROSHELL_NATIVE_STAGE:-}"
   cmake --build build
 }
 
 check() {
   cd "${srcdir}/${pkgname}"
-  qmllint -I build/qmltypes -I /usr/lib/qt6/qml src/shell/qml/*.qml
-  qmllint -I build/qmltypes -I /usr/lib/qt6/qml \
-    assets/plasma/shells/org.aeroshell.desktop/contents/lockscreen/*.qml
   desktop-file-validate session/aeroshell.desktop
-  desktop-file-validate session/org.aeroshell.shell.desktop
-  desktop-file-validate session/org.aeroshell.explorer.desktop
   ctest --test-dir build --output-on-failure
-  python tests/test-install-policy.py
-  python tests/test-source-lock.py
 }
 
 package() {

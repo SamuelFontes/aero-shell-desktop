@@ -1,0 +1,372 @@
+diff --git a/misc/CMakeLists.txt b/misc/CMakeLists.txt
+index 7fa0ad7..c584171 100644
+--- a/misc/CMakeLists.txt
++++ b/misc/CMakeLists.txt
+@@ -1,3 +1,3 @@
+ add_subdirectory(kvantum)
+-add_subdirectory(xdg)
++
+ install(FILES ${CMAKE_SOURCE_DIR}/misc/branding/kcminfo.png DESTINATION ${CMAKE_INSTALL_PREFIX}/share/aerothemeplasma/branding)
+diff --git a/plasma/CMakeLists.txt b/plasma/CMakeLists.txt
+index f63d7f9..0429457 100644
+--- a/plasma/CMakeLists.txt
++++ b/plasma/CMakeLists.txt
+@@ -1,6 +1,6 @@
+-add_subdirectory(sddm)
++
+ if(NOT INSTALL_X11_COMPONENTS)
+-    add_subdirectory(atpootb)
++
+     add_subdirectory(shells)
+     add_subdirectory(plasmoids)
+     add_subdirectory(color_scheme)
+diff --git a/plasma/layout-templates/io.gitgud.wackyideas.taskbar/contents/layout.js b/plasma/layout-templates/io.gitgud.wackyideas.taskbar/contents/layout.js
+index 23a27a1..c61e7c9 100644
+--- a/plasma/layout-templates/io.gitgud.wackyideas.taskbar/contents/layout.js
++++ b/plasma/layout-templates/io.gitgud.wackyideas.taskbar/contents/layout.js
+@@ -95,7 +95,9 @@ if (langIds.indexOf(languageId) != -1) {
+     panel.addWidget("io.gitgud.wackyideas.keyboardlayout");
+ }
+ 
+-panel.addWidget("io.gitgud.wackyideas.systemtray")
++var aeroTray = panel.addWidget("io.gitgud.wackyideas.systemtray");
++aeroTray.currentConfigGroup = ["General"];
++aeroTray.writeConfig("extraItems", ["io.gitgud.wackyideas.notifications", "io.gitgud.wackyideas.volume", "io.gitgud.wackyideas.networkmanagement", "io.gitgud.wackyideas.battery", "io.gitgud.wackyideas.keyboardlayout"]);
+ panel.addWidget("io.gitgud.wackyideas.digitalclocklite")
+ panel.addWidget("io.gitgud.wackyideas.win7showdesktop")
+ 
+diff --git a/plasma/plasmoids/io.gitgud.wackyideas.SevenStart/contents/ui/CompactRepresentation.qml b/plasma/plasmoids/io.gitgud.wackyideas.SevenStart/contents/ui/CompactRepresentation.qml
+index 8d55513..1c4b8ce 100755
+--- a/plasma/plasmoids/io.gitgud.wackyideas.SevenStart/contents/ui/CompactRepresentation.qml
++++ b/plasma/plasmoids/io.gitgud.wackyideas.SevenStart/contents/ui/CompactRepresentation.qml
+@@ -86,6 +86,7 @@ Item {
+         return url;
+     }
+     function positionOrb() {
++        if (!orb) return;
+         var pos = kicker.mapToGlobal(floatingOrbPanel.x, floatingOrbPanel.y);
+         pos.y -= 5;
+         if(Plasmoid.configuration.offsetFloatingOrb) {
+diff --git a/plasma/plasmoids/io.gitgud.wackyideas.SevenStart/contents/ui/MenuRepresentation.qml b/plasma/plasmoids/io.gitgud.wackyideas.SevenStart/contents/ui/MenuRepresentation.qml
+index 5f00426..0dcdb41 100644
+--- a/plasma/plasmoids/io.gitgud.wackyideas.SevenStart/contents/ui/MenuRepresentation.qml
++++ b/plasma/plasmoids/io.gitgud.wackyideas.SevenStart/contents/ui/MenuRepresentation.qml
+@@ -1164,7 +1164,7 @@ PlasmaCore.Dialog {
+ 				size: iconSizeSide
+ 
+ 				KeyNavigation.tab: lockScreenDelegate
+-				KeyNavigation.backtab: Qt.binding(() => { return leaveButtons.findUpItem(); });
++				KeyNavigation.backtab: leaveButtons.findUpItem()
+ 
+ 				Keys.onPressed: event => {
+ 					if(event.key == Qt.Key_Return) {
+diff --git a/plasma/plasmoids/io.gitgud.wackyideas.SevenStart/contents/ui/SearchView.qml b/plasma/plasmoids/io.gitgud.wackyideas.SevenStart/contents/ui/SearchView.qml
+index 8bab378..6478be3 100755
+--- a/plasma/plasmoids/io.gitgud.wackyideas.SevenStart/contents/ui/SearchView.qml
++++ b/plasma/plasmoids/io.gitgud.wackyideas.SevenStart/contents/ui/SearchView.qml
+@@ -96,7 +96,7 @@ Item {
+         id: runnerGrid
+         anchors.fill: parent
+         property alias model: runnerGrid.triggerModel
+-        triggerModel: kicker.runnerModel.count ? kicker.runnerModel.modelForRow(0) : null
++        triggerModel: runnerModel.count ? runnerModel.modelForRow(0) : null
+         MouseArea {
+             id: mouseInhibitor
+             anchors.fill: parent
+diff --git a/plasma/plasmoids/io.gitgud.wackyideas.digitalclocklite/contents/ui/CalendarView.qml b/plasma/plasmoids/io.gitgud.wackyideas.digitalclocklite/contents/ui/CalendarView.qml
+index 5b00899..13eb161 100644
+--- a/plasma/plasmoids/io.gitgud.wackyideas.digitalclocklite/contents/ui/CalendarView.qml
++++ b/plasma/plasmoids/io.gitgud.wackyideas.digitalclocklite/contents/ui/CalendarView.qml
+@@ -111,7 +111,7 @@ PlasmaCore.Dialog {
+ 
+     property bool debug: false
+ 
+-    property bool isExpanded: Plasmoid.expanded
++    property bool isExpanded: calendar.visible
+ 
+     onIsExpandedChanged: {
+         // clear all the selections when the plasmoid is showing/hiding
+diff --git a/plasma/plasmoids/io.gitgud.wackyideas.digitalclocklite/contents/ui/DaysCalendar.qml b/plasma/plasmoids/io.gitgud.wackyideas.digitalclocklite/contents/ui/DaysCalendar.qml
+index 5e15910..af3f936 100755
+--- a/plasma/plasmoids/io.gitgud.wackyideas.digitalclocklite/contents/ui/DaysCalendar.qml
++++ b/plasma/plasmoids/io.gitgud.wackyideas.digitalclocklite/contents/ui/DaysCalendar.qml
+@@ -75,7 +75,7 @@ Item {
+                 verticalAlignment: Text.AlignVCenter
+                 opacity: 0.4
+                 text: modelData
+-                font.pixelSize: Math.max(Kirigami.Theme.smallestFont.pixelSize, daysCalendar.cellHeight / 3)
++                font.pixelSize: Math.max(Kirigami.Theme.smallFont.pixelSize, daysCalendar.cellHeight / 3)
+             }
+         }
+     }
+@@ -115,7 +115,7 @@ Item {
+                 width: daysCalendar.cellWidth
+                 height: daysCalendar.cellHeight
+                 text: (Qt.locale(Qt.locale().uiLanguages[0]).dayName(((calendarBackend.firstDayOfWeek + index) % days.count), Locale.ShortFormat)).substring(0, 2);
+-                font.pixelSize: Math.max(Kirigami.Theme.smallestFont.pixelSize, daysCalendar.cellHeight / 3)
++                font.pixelSize: Math.max(Kirigami.Theme.smallFont.pixelSize, daysCalendar.cellHeight / 3)
+                 //opacity: 0.8
+                 horizontalAlignment: Text.AlignHCenter
+                 verticalAlignment: Text.AlignVCenter
+diff --git a/plasma/plasmoids/io.gitgud.wackyideas.digitalclocklite/contents/ui/DigitalClock.qml b/plasma/plasmoids/io.gitgud.wackyideas.digitalclocklite/contents/ui/DigitalClock.qml
+index 6fa86ad..71698ad 100644
+--- a/plasma/plasmoids/io.gitgud.wackyideas.digitalclocklite/contents/ui/DigitalClock.qml
++++ b/plasma/plasmoids/io.gitgud.wackyideas.digitalclocklite/contents/ui/DigitalClock.qml
+@@ -72,7 +72,7 @@ Item {
+ 
+     // if the date/timezone cannot be fit with the smallest font to its designated space
+     readonly property bool oneLineMode: Plasmoid.formFactor == PlasmaCore.Types.Horizontal &&
+-                                        main.height <= 2 * Kirigami.Theme.smallestFont.pixelSize &&
++                                        main.height <= 2 * Kirigami.Theme.smallFont.pixelSize &&
+                                         (main.showDate || timezoneLabel.visible)
+                                         
+     property QtObject dashWindow: null
+@@ -320,7 +320,7 @@ Item {
+                 width: main.width
+ 
+                 fontSizeMode: Text.Fit
+-                minimumPixelSize: Math.min(0.7 * Kirigami.Theme.smallestFont.pixelSize, timeLabel.height)
++                minimumPixelSize: Math.min(0.7 * Kirigami.Theme.smallFont.pixelSize, timeLabel.height)
+                 elide: Text.ElideRight
+             }
+ 
+diff --git a/plasma/plasmoids/io.gitgud.wackyideas.panel/contents/ui/main.qml b/plasma/plasmoids/io.gitgud.wackyideas.panel/contents/ui/main.qml
+index f191d20..a989009 100644
+--- a/plasma/plasmoids/io.gitgud.wackyideas.panel/contents/ui/main.qml
++++ b/plasma/plasmoids/io.gitgud.wackyideas.panel/contents/ui/main.qml
+@@ -25,9 +25,9 @@ ContainmentItem {
+     // filled in by the shell (Panel.qml) with the plasma-workspace PanelView
+     property var panel: null
+ 
+-    property int panelThickness: root.panel.thickness
+-    property bool panelFloating: root.panel.floating
+-    property bool panelFloatingApplets: root.panel.floatingApplets
++    property int panelThickness: root.panel ? root.panel.thickness : 40
++    property bool panelFloating: root.panel ? root.panel.floating : false
++    property bool panelFloatingApplets: root.panel ? root.panel.floatingApplets : false
+ 
+     onPanelThicknessChanged: {
+         if(root.panel) {
+diff --git a/plasma/plasmoids/io.gitgud.wackyideas.seventasks/contents/ui/Task.qml b/plasma/plasmoids/io.gitgud.wackyideas.seventasks/contents/ui/Task.qml
+index 8524fc0..365410c 100644
+--- a/plasma/plasmoids/io.gitgud.wackyideas.seventasks/contents/ui/Task.qml
++++ b/plasma/plasmoids/io.gitgud.wackyideas.seventasks/contents/ui/Task.qml
+@@ -1401,7 +1401,7 @@ TaskManagerApplet.SmartLauncherItem { }
+                 Badge {
+                     id: badge
+                     visible: task.smartLauncherItem && task.smartLauncherItem.countVisible
+-                    number: task.smartLauncherItem.count
++                    number: task.smartLauncherItem ? task.smartLauncherItem.count : 0
+                     anchors.top: parent.top
+                     anchors.right: parent.right
+                     anchors.rightMargin: (tasksRoot.height <= 30) ? (-Kirigami.Units.largeSpacing + (label.visible ? Kirigami.Units.smallSpacing : 0)) : -Kirigami.Units.smallSpacing
+diff --git a/plasma/plasmoids/io.gitgud.wackyideas.volume/contents/ui/main.qml b/plasma/plasmoids/io.gitgud.wackyideas.volume/contents/ui/main.qml
+index 885d158..c861e93 100644
+--- a/plasma/plasmoids/io.gitgud.wackyideas.volume/contents/ui/main.qml
++++ b/plasma/plasmoids/io.gitgud.wackyideas.volume/contents/ui/main.qml
+@@ -32,7 +32,7 @@ PlasmoidItem {
+     }
+ 
+     property bool volumeFeedback: config.audioFeedback
+-    property bool globalMute: config.globalMute
++    property bool globalMute: config.globalMuteSinks
+     property bool globalMuteSources: config.globalMuteSources
+     property string displayName: i18n("Audio Volume")
+     property QtObject draggedStream: null
+@@ -199,7 +199,7 @@ PlasmoidItem {
+             if (mouse.button == Qt.LeftButton) {
+                 wasExpanded = main.expanded;
+             } else if (mouse.button == Qt.MiddleButton) {
+-                GlobalService.globalMute();
++                GlobalService.globalMuteSinks();
+             }
+         }
+         onClicked: mouse => {
+@@ -366,7 +366,7 @@ PlasmoidItem {
+             checkable: true
+             checked: globalMute
+             onTriggered: {
+-                GlobalService.globalMute();
++                GlobalService.globalMuteSinks();
+             }
+         },
+         PlasmaCore.Action {
+@@ -429,14 +429,14 @@ PlasmoidItem {
+             config.microphoneSensitivityOsd = false;
+             config.save();
+         }
+-        if (Plasmoid.configuration.globalMute === true && !config.globalMute) {
+-            config.globalMute = true;
++        if (Plasmoid.configuration.globalMute === true && !config.globalMuteSinks) {
++            config.globalMuteSinks = true;
+             config.save();
+         }
+         if (Plasmoid.configuration.globalMuteDevices.length !== 0) {
+             for (const device in Plasmoid.configuration.globalMuteDevices) {
+-                if (!config.globalMuteDevices.includes(device)) {
+-                    config.globalMuteDevices.push(device);
++                if (!config.globalMuteSinksMutedDevices.includes(device)) {
++                    config.globalMuteSinksMutedDevices.push(device);
+                 }
+             }
+             config.save();
+diff --git a/plasma/plasmoids/src/desktopcontainment/src/plugins/folder/positioner.h b/plasma/plasmoids/src/desktopcontainment/src/plugins/folder/positioner.h
+index 694a46e..d80786e 100644
+--- a/plasma/plasmoids/src/desktopcontainment/src/plugins/folder/positioner.h
++++ b/plasma/plasmoids/src/desktopcontainment/src/plugins/folder/positioner.h
+@@ -75,7 +75,7 @@ public:
+      * @param flags is used for handling if the PerStripe value is updated
+      * on load.
+      */
+-    void loadAndApplyPositionsConfig(const QString &resolution = QString());
++    Q_INVOKABLE void loadAndApplyPositionsConfig(const QString &resolution = QString());
+ 
+     /**
+      * Saves the positions in m_positions to a configuration file
+@@ -109,7 +109,7 @@ public:
+ 
+     bool screenInUse() const;
+ 
+-    bool updateResolution();
++    Q_INVOKABLE bool updateResolution();
+ 
+     #ifdef BUILD_TESTING
+     QHash<int, int> proxyToSourceMapping() const
+diff --git a/plasma/plasmoids/src/notifications_src/notifications/global/Globals.qml b/plasma/plasmoids/src/notifications_src/notifications/global/Globals.qml
+index 321c412..79b7026 100644
+--- a/plasma/plasmoids/src/notifications_src/notifications/global/Globals.qml
++++ b/plasma/plasmoids/src/notifications_src/notifications/global/Globals.qml
+@@ -87,7 +87,7 @@ QtObject {
+         switch (notificationSettings.popupPosition) {
+         // Auto-determine location based on plasmoid location
+         case NotificationManager.Settings.CloseToWidget:
+-            if (!plasmoid) {
++            if (!plasmoid || !plasmoid.containment) {
+                 return Qt.AlignBottom | Qt.AlignRight; // just in case
+             }
+ 
+@@ -126,7 +126,7 @@ QtObject {
+     }
+ 
+     readonly property rect screenRect: {
+-        if (!plasmoid) {
++        if (!plasmoid || !plasmoid.containment) {
+             return Qt.rect(0, 0, -1, -1);
+         }
+ 
+@@ -262,7 +262,7 @@ QtObject {
+         });
+         globals.plasmoidItems = newPlasmoidItems;
+         globals.plasmoidItem = newPlasmoidItems[0];
+-        globals.plasmoid = globals.plasmoidItem.plasmoid;
++        globals.plasmoid = globals.plasmoidItem ? globals.plasmoidItem.plasmoid : null;
+     }
+ 
+     function checkInhibition() {
+@@ -312,7 +312,7 @@ QtObject {
+     }
+ 
+     function positionPopups() {
+-        if (!plasmoid) {
++        if (!plasmoid || !plasmoid.containment) {
+             return;
+         }
+ 
+diff --git a/plasma/plasmoids/src/sevenstart_src/src/CMakeLists.txt b/plasma/plasmoids/src/sevenstart_src/src/CMakeLists.txt
+index 4412677..bd0de6a 100755
+--- a/plasma/plasmoids/src/sevenstart_src/src/CMakeLists.txt
++++ b/plasma/plasmoids/src/sevenstart_src/src/CMakeLists.txt
+@@ -18,8 +18,8 @@ target_link_libraries(io.gitgud.wackyideas.SevenStart
+         KF6::ConfigCore
+         KF6::ConfigGui
+         KF6::CoreAddons
+-        Plasma
+-        PlasmaQuick
++        Plasma::Plasma
++        Plasma::PlasmaQuick
+ )
+ 
+ include_directories(/usr/include/Plasma /usr/include/KF6/KConfigCore/ /usr/include/KF6/KConfig/ /usr/include/KF6/KCoreAddons/ /usr/include/PlasmaQuick/)
+diff --git a/plasma/plasmoids/src/systemtray_src/CMakeLists.txt b/plasma/plasmoids/src/systemtray_src/CMakeLists.txt
+index 538e359..a6ff925 100755
+--- a/plasma/plasmoids/src/systemtray_src/CMakeLists.txt
++++ b/plasma/plasmoids/src/systemtray_src/CMakeLists.txt
+@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD 23)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+ set(QT_MIN_VERSION "6.9.0")
+ set(KF6_MIN_VERSION "6.18.0")
+-set(BUILD_TESTING ON)
++option(BUILD_TESTING "Build tests" OFF)
+ include(GNUInstallDirs)
+ 
+ option(WITH_X11 "Build with X11 support. Building without is experimental" ON)
+diff --git a/plasma/plasmoids/src/systemtray_src/systemtray/package/contents/ui/main.qml b/plasma/plasmoids/src/systemtray_src/systemtray/package/contents/ui/main.qml
+index c09f807..99e72cd 100644
+--- a/plasma/plasmoids/src/systemtray_src/systemtray/package/contents/ui/main.qml
++++ b/plasma/plasmoids/src/systemtray_src/systemtray/package/contents/ui/main.qml
+@@ -128,7 +128,7 @@ ContainmentItem {
+                 if(write) writeToConfig();
+             }
+             function getItemOrder(id) {
+-                if(typeof orderObject[id] === "undefined") return -1;
++                if (!orderObject || typeof orderObject[id] === "undefined") return -1;
+                 return orderObject[id];
+             }
+             function writeToConfig() {
+diff --git a/plasma/shells/io.gitgud.wackyideas.desktop/contents/layout.js b/plasma/shells/io.gitgud.wackyideas.desktop/contents/layout.js
+index 23a27a1..2fe2c05 100644
+--- a/plasma/shells/io.gitgud.wackyideas.desktop/contents/layout.js
++++ b/plasma/shells/io.gitgud.wackyideas.desktop/contents/layout.js
+@@ -95,7 +95,19 @@ if (langIds.indexOf(languageId) != -1) {
+     panel.addWidget("io.gitgud.wackyideas.keyboardlayout");
+ }
+ 
+-panel.addWidget("io.gitgud.wackyideas.systemtray")
++var aeroTray = panel.addWidget("io.gitgud.wackyideas.systemtray");
++aeroTray.currentConfigGroup = ["General"];
++aeroTray.writeConfig("extraItems", ["io.gitgud.wackyideas.notifications", "io.gitgud.wackyideas.volume", "io.gitgud.wackyideas.networkmanagement", "io.gitgud.wackyideas.battery", "io.gitgud.wackyideas.keyboardlayout"]);
+ panel.addWidget("io.gitgud.wackyideas.digitalclocklite")
+ panel.addWidget("io.gitgud.wackyideas.win7showdesktop")
+ 
++
++// AeroShell first-login wallpaper, resolved through its private data path.
++var aeroDefaults = new ConfigFile("aeroshell-nativerc");
++aeroDefaults.group = "Appearance";
++var aeroDesktops = desktopsForActivity(currentActivity());
++for (var desktop of aeroDesktops) {
++    desktop.wallpaperPlugin = "org.kde.image";
++    desktop.currentConfigGroup = ["Wallpaper", "org.kde.image", "General"];
++    desktop.writeConfig("Image", aeroDefaults.readEntry("Wallpaper"));
++}
+diff --git a/plasma/shells/io.gitgud.wackyideas.desktop/contents/views/DesktopEditMode.qml b/plasma/shells/io.gitgud.wackyideas.desktop/contents/views/DesktopEditMode.qml
+index d1cd63c..638f2ea 100644
+--- a/plasma/shells/io.gitgud.wackyideas.desktop/contents/views/DesktopEditMode.qml
++++ b/plasma/shells/io.gitgud.wackyideas.desktop/contents/views/DesktopEditMode.qml
+@@ -187,6 +187,6 @@ Item {
+ 
+     Component.onCompleted: {
+         open = Qt.binding(() => {return containment.plasmoid.corona.editMode});
+-        executable.exec("kreadconfig6 --file \"/usr/share/sddm/themes/sddm-theme-mod/theme.conf.user\" --group \"General\" --key \"background\"");
++        
+     }
+ }
+diff --git a/plasma/shells/io.gitgud.wackyideas.desktop/contents/views/Panel.qml b/plasma/shells/io.gitgud.wackyideas.desktop/contents/views/Panel.qml
+index 7372b9b..ad06cc4 100644
+--- a/plasma/shells/io.gitgud.wackyideas.desktop/contents/views/Panel.qml
++++ b/plasma/shells/io.gitgud.wackyideas.desktop/contents/views/Panel.qml
+@@ -26,13 +26,13 @@ Item {
+ 
+         function onContainmentChanged() {
+             // HACK: add PanelView into the containment so that it can be used
+-            if (containment.panel !== undefined) {
++            if (containment && containment.panel !== undefined) {
+                 containment.panel = panel;
+             }
+         }
+     }
+ 
+-    property real dpi: root.Window.window.devicePixelRatio
++    property real dpi: (root.Window.window ? root.Window.window.devicePixelRatio : 1)
+ 
+     property Item containment
+     property bool floatingPrefix: floatingPanelSvg.usedPrefix === "floating"

@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+"""Supervise original desktop services on AeroShell's private session bus."""
+import os
+import json
+from pathlib import Path
+import signal
+import subprocess
+import time
+
+if not os.environ.get("AEROSHELL_SESSION_BUS_ADDRESS") or os.environ["AEROSHELL_SESSION_BUS_ADDRESS"] != os.environ.get("DBUS_SESSION_BUS_ADDRESS"):
+    raise SystemExit("AeroShell: start the complete session from its launcher")
+
+prefix = Path(os.environ.get("AEROSHELL_PREFIX", "/opt/aeroshell"))
+# KWin can carry CAP_SYS_NICE. The ELF loader then removes LD_LIBRARY_PATH
+# before KWin starts this child. Restore it here, after that privilege boundary.
+os.environ["LD_LIBRARY_PATH"] = str(prefix / "lib")
+children = []
+
+
+def start(command):
+    process = subprocess.Popen(command)
+    children.append(process)
+    return process
+
+
+def stop(signum=None, frame=None):
+    for process in reversed(children):
+        if process.poll() is None:
+            process.terminate()
+    deadline = time.monotonic() + 5
+    for process in reversed(children):
+        try:
+            process.wait(timeout=max(0.1, deadline - time.monotonic()))
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait()
+    # D-Bus activated services can detach. Stop only this session's marked
+    # processes, leaving KWin and the launcher's ancestor processes to exit normally.
+    ancestors = {os.getpid()}
+    parent = os.getppid()
+    while parent > 1:
+        ancestors.add(parent)
+        try:
+            parent = int(Path(f"/proc/{parent}/stat").read_text().rsplit(")", 1)[1].split()[1])
+        except (OSError, ValueError):
+            break
+    marker = ("AEROSHELL_SESSION_BUS_ADDRESS=" + os.environ["AEROSHELL_SESSION_BUS_ADDRESS"]).encode()
+    for proc in Path("/proc").glob("[0-9]*"):
+        try:
+            if int(proc.name) not in ancestors and marker in (proc / "environ").read_bytes().split(b"\0"):
+                os.kill(int(proc.name), signal.SIGTERM)
+        except OSError:
+            pass
+    if signum:
+        raise SystemExit(0)
+
+
+signal.signal(signal.SIGTERM, stop)
+signal.signal(signal.SIGINT, stop)
+# Update only this private bus. Never import anything into systemd --user.
+subprocess.run(["dbus-update-activation-environment", *[key for key in os.environ
+    if key.startswith(("XDG_", "QT_", "QML", "KDE_", "XCURSOR_", "AEROSHELL_"))
+    or key in ("DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY", "PATH", "LD_LIBRARY_PATH", "PLASMA_DEFAULT_SHELL")]], check=True)
+
+try:
+    if os.environ.get("AEROSHELL_VIRTUAL_TEST") and os.environ.get("AEROSHELL_TEST_STATE_FILE"):
+        Path(os.environ["AEROSHELL_TEST_STATE_FILE"]).write_text(json.dumps(dict(os.environ)))
+    start(["/usr/lib/kactivitymanagerd"])
+    start(["/usr/lib/kglobalacceld"])
+    start(["kded6"])
+    start(["ksmserver"])
+    if not os.environ.get("AEROSHELL_VIRTUAL_TEST"):
+        start([str(prefix / "libexec/uac-polkit-agent")])
+        start(["/usr/lib/org_kde_powerdevil"])
+    shell = start(["plasmashell", "--no-respawn"])
+    raise SystemExit(shell.wait())
+finally:
+    stop()

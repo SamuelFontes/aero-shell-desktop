@@ -7,7 +7,7 @@ mkdir -p -- "$output"
 output="$(realpath "$output")"
 cd "$root"
 archive="$output/aeroshell-desktop-source.tar.gz"
-tar --transform 's,^,aeroshell/,' -czf "$archive" CMakeLists.txt LICENSE README.md plan.md assets defaults docs packaging patches scripts session src tests
+tar --transform 's,^,aeroshell/,' -czf "$archive" CMakeLists.txt LICENSE README.md plan.md assets cmake defaults docs packaging patches scripts session src tests
 checksum="$(sha256sum "$archive")"
 checksum="${checksum%% *}"
 version="0.1.0.r$(git rev-list --count HEAD).g$(git rev-parse --short HEAD).fix$(date +%Y%m%d%H%M%S)"
@@ -28,5 +28,9 @@ text += "\noptions=('!debug')\nCOMPRESSZST=(zstd -c -T2 -10 -)\n"
 Path(target).write_text('# Local workspace snapshot; source archive checksum is pinned.\n' + text)
 PY
 cd "$output"
+if [[ "${AEROSHELL_PACKAGE_PREPARE_ONLY:-0}" == 1 ]]; then
+    printf 'Prepared workspace source archive and PKGBUILD in %s\n' "$output"
+    exit 0
+fi
 CMAKE_BUILD_PARALLEL_LEVEL=4 makepkg --noconfirm --cleanbuild
 sha256sum ./*.pkg.tar.zst > package.sha256

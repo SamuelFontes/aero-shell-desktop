@@ -1,0 +1,15 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 156c9d0..aea022d 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -94,10 +94,8 @@ configure_file(uac-polkit-agent.desktop.cmake ${CMAKE_BINARY_DIR}/uac-polkit-age
+ 
+ install(TARGETS uac-polkit-agent DESTINATION ${KDE_INSTALL_LIBEXECDIR})
+ 
+-install(FILES ${CMAKE_BINARY_DIR}/uac-polkit-agent.desktop DESTINATION ${KDE_INSTALL_AUTOSTARTDIR})
+ install(FILES ${CMAKE_BINARY_DIR}/uac-polkit-agent.desktop DESTINATION ${KDE_INSTALL_APPDIR} RENAME io.gitgud.wackyideas.uac-polkit-agent.desktop)
+ 
+-ecm_install_configured_files(INPUT uac-polkit-agent.conf.in DESTINATION ${KDE_INSTALL_SYSCONFDIR}/systemd/user/plasma-polkit-agent.service.d/)
+ ecm_install_configured_files(INPUT uac-polkit-agent.service.in DESTINATION ${KDE_INSTALL_SYSTEMDUSERUNITDIR})
+ 
+ install(FILES uac-polkit-agent.notifyrc DESTINATION ${KDE_INSTALL_KNOTIFYRCDIR})

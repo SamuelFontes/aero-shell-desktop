@@ -1,5 +1,7 @@
 /build/
+/build-*/
 /stage/
+/stage-*/
 /upstream/*
 !/upstream/sources.lock.json
 *.pkg.tar.*

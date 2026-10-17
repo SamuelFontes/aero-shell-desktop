@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+"""Launch the original Aero desktop in a separate profile and D-Bus session."""
+import argparse
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+
+
+def fail(message):
+    raise SystemExit("AeroShell: " + message)
+
+
+def private_directory(base, *parts):
+    path = base
+    for part in parts:
+        path = path / part
+        if path.is_symlink() or (path.exists() and not path.is_dir()):
+            fail(f"refusing redirected profile directory: {path}")
+        path.mkdir(mode=0o700, exist_ok=True)
+    return path
+
+
+def seed(path, content):
+    if path.is_symlink() or (path.exists() and (not path.is_file() or path.stat().st_nlink != 1)):
+        fail(f"refusing redirected profile file: {path}")
+    if not path.exists():
+        with path.open("x") as output:
+            output.write(content)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--virtual", action="store_true", help="Use an isolated virtual compositor for validation")
+    parser.add_argument("--prepare-only", action="store_true", help="Seed the private profile without starting services")
+    args = parser.parse_args()
+    os.umask(0o077)
+    home = Path(os.environ.get("HOME", ""))
+    if not home.is_absolute():
+        fail("HOME must be absolute")
+    prefix = Path(os.environ.get("AEROSHELL_PREFIX", "/opt/aeroshell"))
+    if not prefix.is_absolute():
+        fail("AEROSHELL_PREFIX must be absolute")
+    if os.environ.get("WAYLAND_DISPLAY") and not args.virtual and not args.prepare_only:
+        fail("select AeroShell from the login screen, outside the running desktop")
+    required = ["share/plasma/shells/io.gitgud.wackyideas.desktop/metadata.json",
+                "share/plasma/desktoptheme/Seven-Black/metadata.json",
+                "share/Kvantum/Windows7Aero/Windows7Aero.kvconfig",
+                "share/aeroshell/native-sources.json", "libexec/aeroshell-native-desktop"]
+    for relative in required:
+        if not (prefix / relative).is_file():
+            fail(f"original runtime is incomplete: {prefix / relative}")
+    roots = {}
+    for key, fallback in {"CONFIG": home / ".config", "DATA": home / ".local/share",
+                          "CACHE": home / ".cache", "STATE": home / ".local/state"}.items():
+        base = Path(os.environ.get(f"XDG_{key}_HOME", str(fallback)))
+        if not base.is_absolute() or base == Path("/"):
+            fail(f"invalid XDG_{key}_HOME")
+        base.mkdir(parents=True, exist_ok=True)
+        roots[key] = private_directory(base, "aeroshell", "native")
+    config = roots["CONFIG"]
+    defaults = prefix / "share/aeroshell/native-defaults"
+    for source in defaults.iterdir():
+        if source.is_file():
+            seed(config / source.name, source.read_text().replace("@PREFIX@", str(prefix)))
+    kvantum = private_directory(config, "Kvantum")
+    seed(kvantum / "kvantum.kvconfig", "[General]\ntheme=Windows7Aero\n")
+    # Kvantum also searches this configuration directory for theme assets;
+    # its distro style plugin does not discover a private prefix via XDG_DATA_DIRS.
+    kvantum_theme = private_directory(kvantum, "Windows7Aero")
+    for name in ("Windows7Aero.kvconfig", "Windows7Aero.svg"):
+        seed(kvantum_theme / name, (prefix / "share/Kvantum/Windows7Aero" / name).read_text())
+    for toolkit in ("gtk-3.0", "gtk-4.0"):
+        directory = private_directory(config, toolkit)
+        seed(directory / "settings.ini", "[Settings]\ngtk-theme-name=Windows-7-Better\ngtk-icon-theme-name=Windows 7 Aero\ngtk-font-name=Segoe UI 9\ngtk-cursor-theme-name=aero-drop\ngtk-cursor-theme-size=32\ngtk-sound-theme-name=Windows 7\n")
+    seed(config / "gtk-4.0/gtk.css", f'@import url("{prefix}/share/themes/Windows-7-Better/gtk-4.0/gtk.css");\n')
+    # Keep normal Desktop/Documents locations while isolating all desktop settings.
+    original_config = Path(os.environ.get("XDG_CONFIG_HOME", str(home / ".config")))
+    for name in ("user-dirs.dirs", "user-dirs.locale"):
+        source = original_config / name
+        if source.is_file():
+            seed(config / name, source.read_text())
+    if args.prepare_only:
+        print(config)
+        return
+    runtime = Path(os.environ.get("XDG_RUNTIME_DIR", ""))
+    if not runtime.is_absolute() or not runtime.is_dir():
+        fail("XDG_RUNTIME_DIR is unavailable")
+    env = dict(os.environ)
+    for key, path in roots.items():
+        env[f"XDG_{key}_HOME"] = str(path)
+    env.update({
+        "AEROSHELL_PREFIX": str(prefix),
+        "XDG_CURRENT_DESKTOP": "AeroShell:KDE", "XDG_SESSION_DESKTOP": "aeroshell",
+        "XDG_SESSION_TYPE": "wayland", "DESKTOP_SESSION": "aeroshell",
+        "XDG_CONFIG_DIRS": str(prefix / "etc/xdg") + ":/etc/xdg",
+        "XDG_DATA_DIRS": f"{prefix}/share:{prefix}/share/aeroshell:/usr/local/share:/usr/share",
+        "QT_PLUGIN_PATH": f"{prefix}/lib/qt6/plugins",
+        "QML_IMPORT_PATH": f"{prefix}/lib/qt6/qml",
+        "QML2_IMPORT_PATH": f"{prefix}/lib/qt6/qml",
+        "LD_LIBRARY_PATH": f"{prefix}/lib",
+        "PATH": f"{prefix}/bin:{prefix}/libexec:" + os.environ.get("PATH", "/usr/bin"),
+        "QT_QPA_PLATFORMTHEME": "kde", "QT_STYLE_OVERRIDE": "kvantum",
+        "GTK_THEME": "Windows-7-Better",
+        "PLASMA_DEFAULT_SHELL": "io.gitgud.wackyideas.desktop",
+        "KDE_FULL_SESSION": "true", "KDE_SESSION_VERSION": "6",
+        "KDE_APPLICATIONS_AS_SCOPE": "0", "KDE_APPLICATIONS_AS_SERVICE": "0",
+        "QML_DISABLE_DISTANCEFIELD": "1", "USE_UAC_AGENT": "1",
+        "XCURSOR_THEME": "aero-drop", "XCURSOR_SIZE": "32",
+        "XCURSOR_PATH": f"{prefix}/share/aeroshell/cursors:/usr/share/icons",
+    })
+    # Do not inherit the prototype's style or another desktop's session endpoints.
+    for key in ("QT_QUICK_CONTROLS_CONF", "QT_QUICK_CONTROLS_STYLE", "FONTCONFIG_FILE",
+                "SESSION_MANAGER", "DBUS_SESSION_BUS_ADDRESS", "DISPLAY", "WAYLAND_DISPLAY"):
+        env.pop(key, None)
+    if args.virtual:
+        env["AEROSHELL_VIRTUAL_TEST"] = "1"
+    kwin = shutil.which("kwin_wayland")
+    bus = shutil.which("dbus-run-session")
+    if not kwin or not bus:
+        fail("KWin and dbus-run-session are required")
+    command = [bus, "--", str(prefix / "libexec/aeroshell-session-bus"), kwin, "--xwayland"]
+    if args.virtual:
+        command += ["--virtual", "--width", "1280", "--height", "720", "--no-lockscreen"]
+    command += ["--exit-with-session", str(prefix / "libexec/aeroshell-native-desktop")]
+    os.execve(bus, command, env)
+
+
+if __name__ == "__main__":
+    main()

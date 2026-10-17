@@ -1,5 +1,7 @@
 # Decision 0001: runtime and compositor
 
+**Superseded by [decision 0004](0004-original-desktop.md): the default runtime now reuses the original desktop components.**
+
 **Status:** Core runtime selected; real-session validation pending. Required AeroThemePlasma appearance components remain unpinned and unaudited.
 
 **Question:** Which Wayland startup chain and compositor arrangement can run an independent AeroShell shell while keeping stock Plasma libraries and plugins unchanged?

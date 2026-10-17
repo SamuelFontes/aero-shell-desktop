@@ -1,0 +1,34 @@
+{
+  "protocols": {
+    "url": "https://github.com/KDE/plasma-wayland-protocols.git",
+    "revision": "4c015e90ae6c88f2ffa766e899387ef431eade49"
+  },
+  "libplasma": {
+    "url": "https://github.com/aeroshell-desktop/libplasma.git",
+    "revision": "6ed0921cfb5f55c7c3e7ebe38a890c69db49ec7d"
+  },
+  "smod": {
+    "url": "https://github.com/aeroshell-desktop/smod.git",
+    "revision": "ba963d7016295a8ca18cc7c60f0e73b62ba3e492"
+  },
+  "aeroshell-workspace": {
+    "url": "https://github.com/aeroshell-desktop/aeroshell-workspace.git",
+    "revision": "ad919f4cbf67cd0bedc5b7710b5b5738ce12d006"
+  },
+  "aeroshell-kwin-components": {
+    "url": "https://github.com/aeroshell-desktop/aeroshell-kwin-components.git",
+    "revision": "461ba76c05e78680045fd36099addac68df0b50b"
+  },
+  "uac-polkit-agent": {
+    "url": "https://github.com/aeroshell-desktop/uac-polkit-agent.git",
+    "revision": "d8c2262f5a12fe1a53560e70414b9312b91d84bb"
+  },
+  "theme": {
+    "url": "https://github.com/aeroshell-desktop/aerothemeplasma.git",
+    "revision": "e4cca91b12dd9419485c19bece76534972324f6a"
+  },
+  "gtk": {
+    "url": "https://gitgud.io/Gamer95875/Windows-7-Better.git",
+    "revision": "53d0072591167404cafc4615b5389365adff1152"
+  }
+}
